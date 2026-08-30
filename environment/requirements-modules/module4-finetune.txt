@@ -1,0 +1,10 @@
+# ===== 模块 4：训练与微调补充依赖 =====
+# 在学 module4-training 时按需安装
+# unsloth 加速微调（需要 PyTorch 版本匹配，先装 torch 再装它）
+# modelscope 备用国内模型源
+unsloth[colab-new]>=2024.7
+modelscope>=1.18.0
+datasets>=2.19.0
+evaluate>=0.4.0
+rouge-score>=0.1.2
+nltk>=3.8.0

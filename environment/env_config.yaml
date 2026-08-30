@@ -1,0 +1,45 @@
+# ===== 运行环境 =====
+env:
+  conda_env_name: "ai-engineering"
+  python_version: "3.10"
+  pip_index: "https://pypi.tuna.tsinghua.edu.cn/simple"
+  hf_mirror: "https://hf-mirror.com"
+  use_modelscope: false
+
+# ===== 模型清单（按模块分组，下载脚本据此拉取）=====
+models:
+  module1_llm_basics:
+    - name: "Qwen/Qwen2.5-7B-Instruct"
+      backend: "huggingface"
+      usage: "提示工程/RAG入门演示"
+  module4_training:
+    - name: "Qwen/Qwen2.5-1.5B-Instruct"
+      backend: "huggingface"
+      usage: "LoRA/QLoRA微调练习(小卡可跑)"
+    - name: "openbmb/MiniCPM-V-2_6"
+      backend: "huggingface"
+      usage: "多模态训练"
+  module5_rag:
+    - name: "BAAI/bge-large-zh-v1.5"
+      backend: "huggingface"
+      usage: "Embedding向量化"
+    - name: "Qwen/Qwen2.5-7B-Instruct"
+      backend: "huggingface"
+      usage: "RAG生成模型"
+
+# ===== 数据集清单 =====
+datasets:
+  module4_training:
+    - name: "wangrui626/alpaca_chinese_demo"
+      backend: "huggingface"
+      usage: "中文微调样例"
+  module5_rag:
+    - name: "local_sample"
+      path: "assets/sample_docs"
+      usage: "本地RAG知识库小样例"
+
+# ===== 资源根目录（落在AutoDL数据盘，避免系统盘写满）=====
+paths:
+  model_cache: "/root/autodl-tmp/ai-engineering/hf_cache"
+  data_root: "/root/autodl-tmp/ai-engineering/data"
+  log_root: "/root/autodl-tmp/ai-engineering/logs"
