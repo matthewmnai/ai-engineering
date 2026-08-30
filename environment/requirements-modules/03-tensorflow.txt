@@ -1,5 +1,5 @@
 # ===== 模块 3：TensorFlow（体积大，按需安装）=====
-# 只在学 module3-frameworks/04-tensorflow 时才需要
+# 只在学 courses/03-frameworks/04-tensorflow 时才需要
 # 安装耗时较长，建议独立 conda 环境或 --no-cache-dir
 tensorflow>=2.16.0
 tensorflow-hub>=0.16.0

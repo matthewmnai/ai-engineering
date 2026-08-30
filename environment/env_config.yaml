@@ -4,42 +4,72 @@ env:
   python_version: "3.10"
   pip_index: "https://pypi.tuna.tsinghua.edu.cn/simple"
   hf_mirror: "https://hf-mirror.com"
-  use_modelscope: false
+  # download 脚本的后端选择策略：
+  #   "modelscope"  → 优先 ModelScope，失败回退 HuggingFace
+  #   "huggingface" → 优先 HuggingFace，失败回退 ModelScope
+  #   "modelscope_only" / "huggingface_only" → 不回退
+  preferred_backend: "modelscope"
 
 # ===== 模型清单（按模块分组，下载脚本据此拉取）=====
+# 字段说明：
+#   name     —— HF/ModelScope 的 repo_id（两边同名时通用）
+#   backend  —— "auto" 用 env.preferred_backend 策略；或指定 "modelscope"/"huggingface"
+#   runtime  —— "autodl"(只GPU) / "mac"(只Mac) / "both"(两边都拉)
+#   type     —— "pretrained"(基座，可重新下载) / "finetuned"(微调产出，需迁移)
+#   subdir   —— 在 models/{type}/ 下的子目录名（不填则用 name 最后一段）
 models:
-  module1_llm_basics:
-    - name: "Qwen/Qwen2.5-7B-Instruct"
-      backend: "huggingface"
-      usage: "提示工程/RAG入门演示"
-  module4_training:
-    - name: "Qwen/Qwen2.5-1.5B-Instruct"
-      backend: "huggingface"
+  04_training:
+    - name: "Qwen/Qwen3.5-0.8B"
+      backend: "auto"
+      runtime: "autodl"
+      type: "pretrained"
       usage: "LoRA/QLoRA微调练习(小卡可跑)"
-    - name: "openbmb/MiniCPM-V-2_6"
-      backend: "huggingface"
-      usage: "多模态训练"
-  module5_rag:
-    - name: "BAAI/bge-large-zh-v1.5"
-      backend: "huggingface"
-      usage: "Embedding向量化"
     - name: "Qwen/Qwen2.5-7B-Instruct"
-      backend: "huggingface"
-      usage: "RAG生成模型"
+      backend: "auto"
+      runtime: "autodl"
+      type: "pretrained"
+      usage: "LoRA/QLoRA微调练习(小卡可跑)"
+
 
 # ===== 数据集清单 =====
+# 字段同 models，额外：
+#   type —— "public"(公开数据集，可重新下载) / "course"(课程专属，需迁移)
+#   path —— 仅 type=course 时使用，指向 assets/ 下的小文件目录
 datasets:
-  module4_training:
+  04_training:
     - name: "wangrui626/alpaca_chinese_demo"
-      backend: "huggingface"
+      backend: "auto"
+      runtime: "autodl"
+      type: "public"
       usage: "中文微调样例"
-  module5_rag:
-    - name: "local_sample"
-      path: "assets/sample_docs"
-      usage: "本地RAG知识库小样例"
+  # 05_rag:
+  #   - name: "course_rag_sample"
+  #     type: "course"
+  #     path: "assets/course/05-rag"
+  #     runtime: "both"
+  #     usage: "课程专属RAG知识库小样例（入库小文件，两边都有）"
 
-# ===== 资源根目录（落在AutoDL数据盘，避免系统盘写满）=====
+# ===== 资源根目录 =====
+# 目录按用途分，迁移时按优先级打包：
+#   🔴 必带: models/finetuned + datasets/course
+#   🟡 建议带: datasets/public（省下载时间）
+#   🟢 可不带: models/pretrained（脚本可重新拉）
 paths:
-  model_cache: "/root/autodl-tmp/ai-engineering/hf_cache"
-  data_root: "/root/autodl-tmp/ai-engineering/data"
-  log_root: "/root/autodl-tmp/ai-engineering/logs"
+  # AutoDL 环境（数据盘绝对路径）
+  autodl:
+    models_pretrained: "/root/autodl-tmp/ai-engineering/models/pretrained"
+    models_finetuned: "/root/autodl-tmp/ai-engineering/models/finetuned"
+    datasets_public: "/root/autodl-tmp/ai-engineering/datasets/public"
+    datasets_course: "/root/autodl-tmp/ai-engineering/datasets/course"
+    checkpoints: "/root/autodl-tmp/ai-engineering/checkpoints"
+    outputs: "/root/autodl-tmp/ai-engineering/outputs"
+    logs: "/root/autodl-tmp/ai-engineering/logs"
+  # Mac 本地（项目内相对路径）
+  mac:
+    models_pretrained: "models/pretrained"
+    models_finetuned: "models/finetuned"
+    datasets_public: "datasets/public"
+    datasets_course: "datasets/course"
+    checkpoints: "checkpoints"
+    outputs: "outputs"
+    logs: "logs"

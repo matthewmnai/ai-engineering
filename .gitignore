@@ -37,15 +37,25 @@ train_output/
 model_cache/
 hf_cache/
 models/
+# models/ 下分 pretrained（基座，可重新下载）和 finetuned（微调产出，迁移必带）
+# 两边都不入 Git，用 download_models.py 拉取
 
-# ===== 数据集（大文件不上git；少量小样例json可保留） =====
+# ===== 训练中间状态（断点续训用，不入 Git） =====
+checkpoints/
+# Unsloth 运行时生成的 Triton 编译缓存（按 GPU 架构 JIT 产物，跨机器不通用）
+unsloth_compiled_cache/
+
+# ===== 数据集（大文件不上git；少量小样例json可保留在 assets/） =====
 *.parquet
 *.arrow
 *.zst
 data/
 dataset/
-raw_data/
-/vlm
+datasets/
+# datasets/ 下分 public（公开，可重新下载）和 course（课程专属，迁移必带）
+# 只有 assets/course/ 下的入库小文件保留
+!assets/
+!assets/**
 
 # ===== 日志、中间输出 =====
 *.log

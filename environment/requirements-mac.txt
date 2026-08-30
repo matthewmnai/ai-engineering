@@ -1,0 +1,15 @@
+# ===== Mac 本地依赖（只 Mac 装）=====
+# Mac 上不装 CUDA torch，但要能跑本地 embedding 小模型
+
+# CPU 版 PyTorch（pip 默认就是 CPU 版，Mac 也没 CUDA）
+torch>=2.1.0
+torchvision>=0.16.0
+
+# HF 模型生态（Mac 跑本地 embedding / 小模型推理）
+transformers>=4.40.0
+accelerate>=0.30.0
+datasets>=2.19.0
+sentence-transformers>=3.0.0
+
+# 注意：peft / trl / bitsandbytes 是微调专用，Mac 不训练就不用装
+#       装了也白装（bitsandbytes 在 Mac 上根本编译不了）

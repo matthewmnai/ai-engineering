@@ -1,107 +1,207 @@
-"""批量下载 HuggingFace 模型权重到本地缓存。
+"""批量下载模型权重到本地 models/ 目录。
 
-读取 environment/env_config.yaml，按模块分组下载，支持只下某组。
-依赖 huggingface_hub（已在 requirements-base.txt 中）。
+核心特性：
+  1. backend="auto" → 优先 ModelScope，失败回退 HuggingFace（国内更快）
+  2. type="pretrained" → 存 models/pretrained/，type="finetuned" → 存 models/finetuned/
+  3. --target mac|autodl|all 按 runtime 字段过滤
+  4. 每个 repo 存到独立子目录（不混放），方便迁移
 
 用法:
-    # 全量下载
-    python environment/download_models.py
-
-    # 只下载某个模块的模型（模块名即 YAML 中 models 下的 key）
-    python environment/download_models.py module4_training
-
-    # 下载多个模块
-    python environment/download_models.py module1_llm_basics module5_rag
+    python environment/download_models.py                              # 自动检测平台
+    python environment/download_models.py --target mac                 # 只下载 Mac 用的
+    python environment/download_models.py --target autodl 04_training  # 指定模块
+    python environment/download_models.py --target all                 # 全量
 """
 import os
 import sys
+import argparse
 from pathlib import Path
 
-# 允许直接 `python environment/download_models.py` 运行，无需改成 module
 ROOT = Path(__file__).resolve().parents[1]
 CONFIG_PATH = ROOT / "environment" / "env_config.yaml"
 
 
 def load_config():
-    """安全读取 env_config.yaml（不引入 yaml 依赖时的兜底逻辑）"""
+    import yaml
+    with open(CONFIG_PATH, "r", encoding="utf-8") as f:
+        return yaml.safe_load(f)
+
+
+def detect_platform():
+    if os.uname().sysname == "Darwin":
+        return "mac"
+    return "autodl"
+
+
+def get_paths(cfg: dict, target: str) -> dict:
+    """取当前平台对应的路径配置，相对路径自动拼 ROOT"""
+    paths_section = cfg.get("paths", {})
+    if target in paths_section and isinstance(paths_section[target], dict):
+        p = paths_section[target]
+    else:
+        # 兜底旧结构
+        p = {
+            "models_pretrained": "models/pretrained",
+            "models_finetuned": "models/finetuned",
+        }
+    result = {}
+    for k, v in p.items():
+        result[k] = v if os.path.isabs(v) else str(ROOT / v)
+    return result
+
+
+def should_download(item: dict, target: str) -> bool:
+    if target == "all":
+        return True
+    runtime = item.get("runtime", "both")
+    return runtime == "both" or runtime == target
+
+
+def resolve_backend(item_backend: str, preferred: str) -> list:
+    """解析 backend 字段，返回尝试顺序列表"""
+    if item_backend == "auto":
+        if preferred == "modelscope":
+            return ["modelscope", "huggingface"]
+        elif preferred == "huggingface":
+            return ["huggingface", "modelscope"]
+        elif preferred == "modelscope_only":
+            return ["modelscope"]
+        elif preferred == "huggingface_only":
+            return ["huggingface"]
+        else:
+            return ["modelscope", "huggingface"]
+    return [item_backend]
+
+
+def get_subdir(item: dict, name: str) -> str:
+    """取子目录名：优先用 item.subdir，否则取 name 最后一段"""
+    if "subdir" in item:
+        return item["subdir"]
+    return name.split("/")[-1]
+
+
+def download_modelscope(name: str, target_dir: str) -> bool:
+    """用 ModelScope 下载，存到 target_dir"""
     try:
-        import yaml  # type: ignore
-        with open(CONFIG_PATH, "r", encoding="utf-8") as f:
-            return yaml.safe_load(f)
+        from modelscope import snapshot_download as ms_download
     except ImportError:
-        # 极简兜底：直接 exec YAML 里需要的字段 —— 仅用于首次 bootstrap
-        print("⚠️  yaml 未安装，请先运行 setup.sh 或 pip install pyyaml")
-        sys.exit(1)
+        print(f"    ↳ modelscope 未安装，回退")
+        return False
+    try:
+        # ModelScope 的 cache_dir 会创建 models--{org}--{name} 结构
+        # 我们用 local_dir 直接指定到目标目录
+        ms_download(model_id=name, local_dir=target_dir)
+        return True
+    except Exception as e:
+        print(f"    ↳ ModelScope 失败: {e}")
+        return False
 
 
-def download_one(name: str, backend: str, cache_dir: str):
-    """下载单个模型到 cache_dir"""
-    if backend == "huggingface":
+def download_huggingface(name: str, target_dir: str) -> bool:
+    """用 HuggingFace 下载，存到 target_dir"""
+    try:
         from huggingface_hub import snapshot_download
-        print(f"  ⬇️  [{backend}] {name}")
+    except ImportError:
+        print(f"    ↳ huggingface_hub 未安装")
+        return False
+    try:
         snapshot_download(
             repo_id=name,
-            cache_dir=cache_dir,
+            local_dir=target_dir,
             resume_download=True,
         )
-    elif backend == "modelscope":
-        try:
-            from modelscope import snapshot_download as ms_download
-        except ImportError:
-            print(f"  ❌  backend=modelscope 但未安装 modelscope")
-            return False
-        print(f"  ⬇️  [{backend}] {name}")
-        ms_download(model_id=name, cache_dir=cache_dir)
-    else:
-        print(f"  ⚠️  未知 backend={backend}，跳过 {name}")
+        return True
+    except Exception as e:
+        print(f"    ↳ HuggingFace 失败: {e}")
         return False
-    return True
+
+
+def download_one(item: dict, paths: dict, preferred_backend: str) -> bool:
+    """下载单个模型，返回是否成功"""
+    name = item["name"]
+    model_type = item.get("type", "pretrained")  # pretrained / finetuned
+    backend = item.get("backend", "auto")
+
+    # 确定目标目录
+    base_key = f"models_{model_type}"  # models_pretrained / models_finetuned
+    base_dir = paths.get(base_key, paths.get("models_pretrained", "models/pretrained"))
+    subdir = get_subdir(item, name)
+    target_dir = os.path.join(base_dir, subdir)
+    os.makedirs(target_dir, exist_ok=True)
+
+    # 已下载则跳过（检查目录非空）
+    if os.listdir(target_dir):
+        print(f"  ✅  {subdir}/ 已存在，跳过")
+        return True
+
+    # 解析后端尝试顺序
+    backends = resolve_backend(backend, preferred_backend)
+    print(f"  ⬇️  [{model_type}] {name} → models/{model_type}/{subdir}/  (尝试: {' → '.join(backends)})")
+
+    for b in backends:
+        if b == "modelscope":
+            if download_modelscope(name, target_dir):
+                print(f"    ✅ ModelScope 下载完成")
+                return True
+        elif b == "huggingface":
+            if download_huggingface(name, target_dir):
+                print(f"    ✅ HuggingFace 下载完成")
+                return True
+
+    print(f"    ❌ 所有后端均失败")
+    return False
 
 
 def main():
-    cfg = load_config()
+    parser = argparse.ArgumentParser(description="批量下载模型")
+    parser.add_argument("--target", choices=["mac", "autodl", "all"],
+                        help="目标平台（默认自动检测）")
+    parser.add_argument("modules", nargs="*",
+                        help="可选：只下载指定模块（如 04_training）")
+    args = parser.parse_args()
 
-    # HF 镜像：setup.sh 已持久化 HF_ENDPOINT，这里兼容手动运行场景
+    cfg = load_config()
+    target = args.target or detect_platform()
+
+    # HF 镜像
     if not os.environ.get("HF_ENDPOINT"):
         mirror = cfg.get("env", {}).get("hf_mirror", "")
         if mirror:
             os.environ["HF_ENDPOINT"] = mirror
-            print(f"🔄  设置 HF 镜像: {mirror}")
 
-    cache_dir = cfg.get("paths", {}).get("model_cache")
-    if not cache_dir:
-        print("❌  env_config.yaml: paths.model_cache 未配置")
-        sys.exit(1)
-    os.makedirs(cache_dir, exist_ok=True)
-    print(f"📦  缓存目录: {cache_dir}")
+    preferred = cfg.get("env", {}).get("preferred_backend", "modelscope")
+    paths = get_paths(cfg, target)
 
-    # 过滤目标分组
-    targets = sys.argv[1:]
+    # 创建目录
+    for key in ["models_pretrained", "models_finetuned"]:
+        os.makedirs(paths.get(key, "models/pretrained"), exist_ok=True)
+
+    print(f"🤖  目标平台: {target}")
+    print(f"📦  优先后端: {preferred}")
+    print(f"📂  基座模型: {paths['models_pretrained']}")
+    print(f"📂  微调产出: {paths['models_finetuned']}")
+
     groups = cfg.get("models", {})
-    if not groups:
-        print("⚠️  env_config.yaml: models 未配置任何项")
-        return
+    if args.modules:
+        groups = {k: v for k, v in groups.items() if k in args.modules}
 
-    print(f"\n🗺️  待下载分组: {list(groups.keys())}")
-    if targets:
-        print(f"🎯  仅下载: {targets}")
-
-    total_ok, total_fail = 0, 0
+    total_ok, total_fail, total_skip = 0, 0, 0
     for group_key, items in groups.items():
-        if targets and group_key not in targets:
-            continue
-        print(f"\n==== 模块分组: {group_key} ({len(items)} 个) ====")
+        print(f"\n==== 模块分组: {group_key} ====")
         for item in items:
-            ok = download_one(
-                name=item["name"],
-                backend=item.get("backend", "huggingface"),
-                cache_dir=cache_dir,
-            )
-            if ok:
+            if not should_download(item, target):
+                print(f"  ⏭️  [{item.get('runtime','both')}] {item['name']} 跳过（非 {target} 目标）")
+                total_skip += 1; continue
+            if download_one(item, paths, preferred):
                 total_ok += 1
             else:
                 total_fail += 1
-    print(f"\n✅ 成功 {total_ok}  ❌ 失败 {total_fail}")
+
+    print(f"\n{'='*50}")
+    print(f"✅ 成功 {total_ok}  ⏭️ 跳过 {total_skip}  ❌ 失败 {total_fail}")
+    print(f"\n💡 迁移到新 AutoDL 机器时:")
+    print(f"   🔴 必带: {paths['models_finetuned']}")
+    print(f"   🟢 可不带: {paths['models_pretrained']}（本脚本可重新下载）")
 
 
 if __name__ == "__main__":

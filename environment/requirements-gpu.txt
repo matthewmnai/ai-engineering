@@ -1,0 +1,28 @@
+# ===== AutoDL GPU 依赖（只 AutoDL 装）=====
+# 训练 / 微调 / 大模型推理必需，体积大、强依赖 CUDA
+
+# CUDA 版 PyTorch —— 务必按 AutoDL 显卡驱动选对应 CUDA 版本
+# 下面是 cu124（CUDA 12.4），大多数 AutoDL 实例可直接用
+# 如果你的机器是 CUDA 12.1 / 11.8，改 index-url 里的版本号
+torch>=2.4.0
+torchvision>=0.19.0
+torchaudio>=2.4.0
+# 如需强制 CUDA 版本，setup-autodl.sh 里会用:
+#   pip install torch --index-url https://download.pytorch.org/whl/cu124
+
+# HF 生态 + 微调核心（最低版本受 unsloth 2026.8.22 约束）
+transformers>=4.51.3,<=5.5.0   # unsloth 拉黑 4.52.x/4.53.0/4.54.0/4.55.x/4.57.4/4.57.5/5.0.0/5.1.0
+accelerate>=0.34.0
+peft>=0.18.0           # 跳过 unsloth 拉黑的 0.11.0
+trl>=0.18.2,<=0.24.0   # 跳过 unsloth 拉黑的 0.19.0
+datasets>=2.19.0
+sentence-transformers>=3.0.0
+
+# 量化（bitsandbytes 在 Mac 上编译不了，只 Linux GPU 可用）
+bitsandbytes>=0.45.5   # 跳过 unsloth 拉黑的 0.46.0 / 0.48.0
+
+# 微调加速（锁版本，两版本配套；只支持 Linux + CUDA，Mac 不可用）
+# 如遇 CUDA 版本冲突可改用:
+#   pip install "unsloth[colab-new] @ git+https://github.com/unslothai/unsloth.git"
+unsloth==2026.8.22
+unsloth_zoo==2026.8.16

@@ -1,7 +1,7 @@
 # AI Engineering 学习工程
 
 > 一个系统化学习 AI 工程化能力的实践仓库，覆盖大模型基础应用、训练微调、RAG 知识库、Agent 开发与工业级部署全链路。
-> 按课程七大模块顺序组织，配套**自动化开发环境**与**资源下载工具**。
+> 按课程七大模块顺序组织，配套**双平台自动化开发环境**与**配置驱动的资源下载工具**。
 
 ---
 
@@ -10,102 +10,145 @@
 | 特点 | 说明 |
 |---|---|
 | 🗂️ **模块驱动** | 目录即课程顺序，每个章节目录含 README + 练习代码 + 数据样例 |
-| 🤖 **环境自动化** | `bash setup.sh` 一键装依赖、配镜像、拉模型、下数据集 |
-| 📦 **配置驱动** | 模型 / 数据集清单集中在 `environment/env_config.yaml`，增删改只动 YAML |
-| 🔒 **大文件隔离** | `.gitignore` 已覆盖权重 / 数据集 / 密钥 / 产出，不污染仓库 |
+| 🤖 **环境自动化** | `bash setup.sh` 自动检测 Mac/AutoDL 并路由，装对的依赖 |
+| 🍎🐧 **双平台适配** | Mac 本地跑 API + 小 embedding；AutoDL GPU 跑训练 / 微调 / 大模型推理 |
+| 📦 **配置驱动** | 模型 / 数据集清单在 `env_config.yaml` 标 `runtime` + `type`，download 脚本自动过滤 |
+| 🔄 **ModelScope 优先** | `backend: "auto"` 优先从 ModelScope 下载，失败回退 HuggingFace（国内更快） |
+| 🚚 **一键迁移** | `pack_migration.sh` 按优先级打包微调产出 + 课程数据，跨 AutoDL 机器无缝迁移 |
+| 🔒 **大文件隔离** | `.gitignore` 覆盖权重 / 数据集 / 密钥 / 产出，不污染仓库 |
 | 🧩 **公共能力复用** | 统一 LLM 客户端、配置加载、日志工具，各章节 import 即可用（规划中） |
 
 ---
 
 ## 🚀 快速开始
 
+### Mac 本地（API 调用 + 本地小 embedding）
+
 ```bash
-# 1. 克隆
 git clone <your-repo-url> ai-engineering && cd ai-engineering
 
-# 2. 一键部署环境（conda + pip + HF 镜像 + 自检）
-bash setup.sh
+# 一键部署 —— 自动检测 Mac，只装 common + mac 依赖（CPU 版 torch）
+bash setup.sh          # 等价于 bash environment/setup-mac.sh
 
-# 3. 填入密钥
+cp .env.example .env   # 填入 API Key
+
+# （可选）只拉 Mac 需要的小 embedding 模型
+python environment/download_models.py --target mac
+```
+
+### AutoDL / Linux GPU（全栈，含训练 / 微调）
+
+```bash
+# setup.sh 在 Linux 上自动路由到 setup-autodl.sh
+bash setup.sh          # conda + common 依赖 + CUDA 版 torch + HF 镜像
+
 cp .env.example .env
-# 编辑 .env，填入 OPENAI_API_KEY 等（已在 .gitignore 中，不会入库）
 
-# 4. 拉模型 / 数据集（支持按模块分组，避免一次拉全量）
-python environment/download_models.py          # 全量
-python environment/download_models.py module5_rag   # 只拉 RAG 模块所需
+# 拉模型 / 数据集（默认按平台过滤，只拉 AutoDL 需要的）
+python environment/download_models.py                              # 自动检测
+python environment/download_models.py --target autodl 04_training   # 指定模块
 
-# 5. 开始学习：进入对应 moduleX/0X-章节/，按其 README 运行
+# 全量下载（忽略 runtime 过滤）
+python environment/download_models.py --target all
 ```
 
-### 环境依赖
+### 两种写法
 
-| 项目 | 值 |
+| 命令 | 行为 |
 |---|---|
-| Python | 3.10（conda 环境名 `ai-engineering`） |
-| pip 源 | 清华镜像 `https://pypi.tuna.tsinghua.edu.cn/simple` |
-| HF 镜像 | `https://hf-mirror.com`（国内加速，setup.sh 自动持久化到 `~/.bashrc`） |
-| 资源盘 | `/root/autodl-tmp/ai-engineering/`（AutoDL 数据盘，避免系统盘写满） |
-
-### 依赖分层
-
-```
-requirements-base.txt          # 基础依赖，setup.sh 默认安装
-requirements-modules/*.txt     # 可选重包（tensorflow / unsloth / sglang …），按需装
-```
+| `bash setup.sh` | 自动检测平台，路由到对应 setup-*.sh |
+| `bash setup.sh --target mac` | 强制 Mac 依赖 |
+| `bash setup.sh --target autodl` | 强制 AutoDL 依赖 |
+| `bash environment/setup-mac.sh` | 直接调用 Mac 版本 |
+| `bash environment/setup-autodl.sh` | 直接调用 AutoDL 版本 |
 
 ---
 
-## 📂 项目架构
+## 🖥️ 课程模块 × 运行环境
+
+| 模块 | 核心任务 | Mac | AutoDL GPU | 说明 |
+|---|---|:-:|:-:|---|
+| **模块 1** 初步接触 | Prompt / RAG / Agent 基础演示 | ✅ | ✅ | 全走 API |
+| **模块 2** 基础入门 | API 调用 / AI Coding | ✅ | ✅ | 全走 API |
+| **模块 3** 开发框架 | LangChain / HF / TensorFlow / PyTorch | ⚠️ | ✅ | TF/PyTorch 本地推理 Mac M 系列可勉强跑 |
+| **模块 4** 训练微调 | LoRA / QLoRA / 蒸馏 / 多模态训练 | ❌ | ✅ | **必须 AutoDL GPU** |
+| **模块 5** RAG 体系 | Embedding / 向量库 / RAG 调优 | ✅ | ✅ | Mac 本地跑小 embedding 模型 |
+| **模块 6** Agent 高阶 | MCP / OpenManus / Hermes | ✅ | ✅ | 全走 API |
+| **模块 7** 部署与高并发 | SGLang / 视频 AIGC | ❌ | ✅ | **必须 AutoDL GPU** |
+
+> ✅ 推荐 · ⚠️ 可以但可能慢 · ❌ 不支持
+
+---
+
+## � 项目架构
 
 ```
 ai-engineering/
 ├── .gitignore                          # ✅ 大文件 / 密钥 / Notebook 忽略规则
-├── .env.example                        # ✅ 密钥模板（复制为 .env 后填入真实值）
-├── setup.sh                            # ✅ 一键部署软链接 → environment/setup.sh
+├── .env.example                        # ✅ 密钥模板（复制为 .env 后填入）
+├── setup.sh                            # ✅ 根目录路由脚本 —— 自动检测平台
 │
 ├── environment/                        # ✅ 已落地 —— 开发环境自动化
-│   ├── setup.sh                        #   conda + pip + HF 镜像 + 自检
-│   ├── verify_env.py                   #   环境自检（必选依赖 / 可选依赖 / CUDA）
-│   ├── download_models.py              #   配置驱动批量拉模型（HF / ModelScope）
-│   ├── download_datasets.py            #   配置驱动批量拉数据集
-│   ├── env_config.yaml                 #   模型 / 数据集 / 路径 统一配置入口
-│   ├── requirements-base.txt           #   基础依赖（PyTorch / HF / LangChain …）
-│   └── requirements-modules/            #   可选重包（按需安装）
-│       ├── module3-tensorflow.txt
-│       └── module4-finetune.txt
+│   ├── setup-autodl.sh                 #   AutoDL/Linux GPU 环境（common + gpu）
+│   ├── setup-mac.sh                    #   Mac 本地环境（common + mac）
+│   ├── verify_env.py                   #   环境自检（必选依赖 / 可选依赖 / 镜像 / CUDA）
+│   ├── download_models.py              #   批量拉模型（ModelScope优先 + --target 过滤）
+│   ├── download_datasets.py            #   批量拉数据集（ModelScope优先 + --target 过滤）
+│   ├── pack_migration.sh               #   跨 AutoDL 机器迁移打包脚本
+│   ├── env_config.yaml                 #   统一配置（backend/runtime/type + 分平台路径）
+│   ├── requirements-common.txt         #   两边通用轻量依赖（openai / langchain / pyyaml …）
+│   ├── requirements-mac.txt            #   只 Mac：CPU torch + sentence-transformers
+│   ├── requirements-gpu.txt            #   只 AutoDL：CUDA torch + peft + bitsandbytes …
+│   └── requirements-modules/            #   可选重包（按需装，对应 courses/ 模块）
+│       ├── 03-tensorflow.txt
+│       └── 04-finetune.txt
 │
-├── common/                             # 🛠️ 规划中 —— 公共工具库（各模块 import 复用）
-│   ├── llm_client.py                   #   统一 LLM 调用（兼容 OpenAI / DeepSeek / Qwen …）
+├── models/                             # ✅ 资源目录（setup.sh 自动创建，不入 Git）
+│   ├── pretrained/                     #   基座模型（大，可重新下载 🟢）
+│   └── finetuned/                      #   微调产出（不可再生，迁移必带 🔴）
+├── datasets/                           # ✅ 数据集目录
+│   ├── public/                         #   公开数据集（可重新下载，建议带 🟡）
+│   └── course/                         #   课程专属数据（迁移必带 🔴）
+├── checkpoints/                        # ✅ 训练中间状态（断点续训，可选 🟢）
+├── outputs/                           # ✅ 训练日志 / 评估结果（不迁移）
+├── logs/                              # ✅ 运行日志
+│
+├── common/                             # 🛠️ 规划中 —— 公共工具库
+│   ├── llm_client.py                   #   统一 LLM 调用客户端
 │   ├── config.py                       #   配置加载（env_config.yaml + .env）
-│   ├── logger.py                       #   日志工具
-│   └── utils.py                        #   通用函数
+│   ├── logger.py
+│   └── utils.py
 │
-├── module1-llm-basics/                 # 📚 规划中 —— 模块1：初步接触
-├── module2-llm-foundation/             # 📚 规划中 —— 模块2：基础入门
-├── module3-frameworks/                 # 📚 规划中 —— 模块3：开发框架
-├── module4-training/                   # 📚 规划中 —— 模块4：训练与微调 ⭐核心重难点
-├── module5-rag/                        # 📚 规划中 —— 模块5：知识库与RAG体系 ⭐企业落地
-├── module6-agent/                      # 📚 规划中 —— 模块6：AI Coding + Agent 深度实战
-├── module7-deployment/                 # 📚 规划中 —— 模块7：模型部署与高并发
+├── courses/                            # 📚 课程模块（七大模块，按编号排序）
+│   ├── 01-llm-basics/                  #   规划中
+│   ├── 02-llm-foundation/              #   规划中
+│   ├── 03-frameworks/                  #   规划中
+│   ├── 04-training/                    #   规划中 ⭐ 必须 AutoDL
+│   ├── 05-rag/                         #   规划中
+│   ├── 06-agent/                       #   规划中
+│   └── 07-deployment/                  #   规划中 ⭐ 必须 AutoDL
 │
 ├── projects/                           # 🏭 规划中 —— 工业级综合项目
-│   ├── visual-quality-inspection/      #   AI 视觉质检工业项目
-│   └── rag-champion/                   #   RAG 大赛冠军项目拆解
-│
 ├── assets/                             # 🗂️ 规划中 —— 入库的小样例数据
-├── docs/                               # 📖 规划中 —— 文档与学习路线图
-└── scripts/                            # 🔧 规划中 —— 辅助脚本
+└── docs/                               # � 规划中
 ```
 
-### 章节内部统一结构（模板）
-
-每个 `moduleX/0X-chapter-name/` 内部保持一致，便于检索和自动化：
+### 依赖分层
 
 ```
-01-prompt-engineering/
-├── README.md          # 本章学习目标 + 知识点 + 运行说明
-├── src/               # 练习代码（可独立运行）
-├── data/              # 本章小样例数据（大文件不入库）
+requirements-common.txt     # openai / langchain / huggingface_hub / 工具库 —— 两边都装
+requirements-mac.txt         # CPU torch / transformers / sentence-transformers —— 只 Mac
+requirements-gpu.txt         # CUDA torch / peft / trl / bitsandbytes —— 只 AutoDL
+requirements-modules/*.txt   # tensorflow / unsloth / sglang —— 按需、只 AutoDL
+```
+
+### 章节内部统一结构
+
+```
+courses/NN-name/0X-chapter-name/
+├── README.md          # 学习目标 + 知识点 + 运行说明 + 环境标签
+├── src/               # 练习代码
+├── data/              # 本章小样例（大文件不入库）
 └── outputs/           # 运行产出（git 忽略）
 ```
 
@@ -113,9 +156,7 @@ ai-engineering/
 
 ## 📚 完整课程目录（七大模块）
 
-> 按课程学习顺序排列。模块 4 为**核心重难点**，模块 5 为**企业落地核心技术**，模块 6 为**高阶应用**，模块 7 为**工业上线**。
-
-### 模块 1 · 初步接触（大模型基础应用入门）
+### 模块 1 · 初步接触 🖥️ Mac / AutoDL
 
 | # | 课程 | 日期 |
 |:-:|---|:-:|
@@ -124,14 +165,14 @@ ai-engineering/
 | 3 | Agent 基础：可控逻辑、自主反思机制 | 07-13 |
 | 4 | 多模态前沿：Agent 拓展 + 视频 AIGC | 07-16 |
 
-### 模块 2 · 基础入门（LLM 基础 + AI 编程）
+### 模块 2 · 基础入门 🖥️ Mac / AutoDL
 
 | # | 课程 | 日期 |
 |:-:|---|:-:|
 | 1 | AI 大模型原理 + API 实战调用 | 07-21 |
 | 2 | AI 编程全流程实操 | 07-23 |
 
-### 模块 3 · 开发框架（主流 LLM 工程框架）
+### 模块 3 · 开发框架 🖥️ AutoDL（Mac 可跑前 3 节）
 
 | # | 课程 | 日期 |
 |:-:|---|:-:|
@@ -142,7 +183,7 @@ ai-engineering/
 | 5 | Pytorch + 视觉检测项目 | 08-10 |
 | 6 | 框架方向简历、面试专项辅导 | 08-13 |
 
-### 模块 4 · 模型训练与微调（核心重难点，匹配预训练 + 微调范式）
+### 模块 4 · 模型训练与微调 🖥️ **仅 AutoDL**
 
 | # | 课程 | 日期 |
 |:-:|---|:-:|
@@ -153,7 +194,7 @@ ai-engineering/
 | 5 | AI 视觉质检工业项目 | 08-31 |
 | 6 | 训练微调方向简历面试辅导 | 09-03 |
 
-### 模块 5 · 知识库与 RAG 体系（企业落地核心技术）
+### 模块 5 · 知识库与 RAG 体系 🖥️ Mac / AutoDL
 
 | # | 课程 | 日期 |
 |:-:|---|:-:|
@@ -166,7 +207,7 @@ ai-engineering/
 | 7 | LLM 知识库 Wiki 搭建 | 09-28 |
 | 8 | RAG 岗位简历面试辅导 | 10-01 |
 
-### 模块 6 · AI Coding + Agent 深度实战（高阶应用）
+### 模块 6 · AI Coding + Agent 深度实战 🖥️ Mac / AutoDL
 
 #### 6.1 AI Coding 单元
 
@@ -190,7 +231,7 @@ ai-engineering/
 | 7 | Hermes 多 Agent 协作、主 Agent 调度系统 | 11-09 |
 | 8 | Agent 岗位简历面试辅导 | 11-12 |
 
-### 模块 7 · 模型部署与高并发（工业上线）
+### 模块 7 · 模型部署与高并发 🖥️ **仅 AutoDL**
 
 | # | 课程 | 日期 |
 |:-:|---|:-:|
@@ -207,7 +248,7 @@ ai-engineering/
 模块1 初步接触  ──→  模块2 基础入门  ──→  模块3 开发框架
                                               │
                                               ▼
-模块7 部署上线  ←──  模块6 Agent高阶  ←──  模块4 训练微调
+模块7 部署上线  ←──  模块6 Agent高阶  ←──  模块4 训练微调  (🖥️ 仅 AutoDL)
                                               │
                                               ▼
                                         模块5 RAG体系
@@ -219,43 +260,96 @@ ai-engineering/
 
 | 文件 | 职责 | 用法 |
 |---|---|---|
-| [setup.sh](environment/setup.sh) | 一键部署：conda 环境 + pip 依赖 + HF 镜像 + 自检 | `bash setup.sh` |
-| [verify_env.py](environment/verify_env.py) | 环境自检：必选依赖 / 可选依赖 / 镜像 / CUDA | `python environment/verify_env.py` |
-| [download_models.py](environment/download_models.py) | 配置驱动批量拉模型，支持按模块分组 | `python environment/download_models.py [模块key...]` |
-| [download_datasets.py](environment/download_datasets.py) | 配置驱动批量拉数据集，本地样例自动跳过 | `python environment/download_datasets.py [模块key...]` |
-| [env_config.yaml](environment/env_config.yaml) | 模型 / 数据集 / 资源路径 统一配置入口 | 编辑此文件增删资源 |
-| [requirements-base.txt](environment/requirements-base.txt) | 基础依赖清单（PyTorch / HF / LangChain 等） | setup.sh 默认安装 |
-| [requirements-modules/*.txt](environment/requirements-modules/) | 可选重包（TensorFlow / unsloth / sglang 等） | 按需 `pip install -r` |
+| [setup.sh](setup.sh) | 根目录路由脚本，自动检测平台 | `bash setup.sh` 或 `bash setup.sh --target mac` |
+| [setup-autodl.sh](environment/setup-autodl.sh) | AutoDL GPU：common + gpu 依赖 + HF 镜像 | `bash environment/setup-autodl.sh` |
+| [setup-mac.sh](environment/setup-mac.sh) | Mac：common + mac 依赖（CPU torch） | `bash environment/setup-mac.sh` |
+| [verify_env.py](environment/verify_env.py) | 环境自检：必选/可选依赖、镜像、CUDA | `python environment/verify_env.py` |
+| [download_models.py](environment/download_models.py) | ModelScope 优先批量拉模型，按 type 分流到 pretrained/finetuned | `--target mac\|autodl\|all` |
+| [download_datasets.py](environment/download_datasets.py) | ModelScope 优先批量拉数据集，按 type 分流到 public/course | 同上 |
+| [pack_migration.sh](environment/pack_migration.sh) | 跨 AutoDL 机器迁移打包 | `--level must\|should\|all` |
+| [env_config.yaml](environment/env_config.yaml) | 统一配置：backend/runtime/type + 分平台路径 | 编辑此文件 |
+| requirements-*.txt | common / mac / gpu 三层依赖 | 分别被对应 setup 脚本安装 |
 
-### env_config.yaml 示例（部分）
+### env_config.yaml 示例
 
 ```yaml
+# 后端策略：优先 ModelScope，失败回退 HuggingFace
+env:
+  preferred_backend: "modelscope"
+
 models:
-  module4_training:
-    - name: "Qwen/Qwen2.5-1.5B-Instruct"
-      backend: "huggingface"
-      usage: "LoRA/QLoRA微调练习(小卡可跑)"
-  module5_rag:
+  05_rag:
     - name: "BAAI/bge-large-zh-v1.5"
-      backend: "huggingface"
-      usage: "Embedding向量化"
+      backend: "auto"          # 用 env.preferred_backend 策略
+      runtime: "both"          # Mac 本地 + AutoDL 训练都拉
+      type: "pretrained"       # 存到 models/pretrained/
+    - name: "Qwen/Qwen2.5-7B-Instruct"
+      backend: "auto"
+      runtime: "autodl"        # 只有 AutoDL 拉（大模型）
+      type: "pretrained"
 
+datasets:
+  05_rag:
+    - name: "course_rag_sample"
+      type: "course"            # 课程专属数据，存到 datasets/course/
+      path: "assets/course/05-rag"
+      runtime: "both"
+
+# 路径按平台 + 用途分
 paths:
-  model_cache: "/root/autodl-tmp/ai-engineering/hf_cache"
-  data_root:   "/root/autodl-tmp/ai-engineering/data"
+  autodl:
+    models_pretrained: "/root/autodl-tmp/ai-engineering/models/pretrained"
+    models_finetuned: "/root/autodl-tmp/ai-engineering/models/finetuned"
+    datasets_public: "/root/autodl-tmp/ai-engineering/datasets/public"
+    datasets_course: "/root/autodl-tmp/ai-engineering/datasets/course"
+  mac:
+    models_pretrained: "models/pretrained"
+    models_finetuned: "models/finetuned"
+    datasets_public: "datasets/public"
+    datasets_course: "datasets/course"
 ```
-
-增删模型 / 数据集 → 改 YAML → 重新跑 download 脚本即可。
 
 ---
 
-## 📌 工程约定
+## � 资源迁移（跨 AutoDL 机器）
 
-- **大文件不进 Git**：权重（`*.safetensors / *.bin / *.gguf`）、数据集（`*.parquet`）、密钥（`.env`）、产出（`outputs/`）均在 `.gitignore` 中。
-- **配置驱动**：`environment/env_config.yaml` 是资源清单单一真源。
-- **编号排序**：模块 / 章节目录统一 `0X-` 前缀，文件管理器天然按学习顺序排列。
-- **重包隔离**：体积大且非每章必用的依赖（tensorflow / unsloth / sglang）放 `requirements-modules/`，按需安装。
-- **资源落数据盘**：AutoDL 系统盘有限，缓存 / 数据集 / 日志全部落 `/root/autodl-tmp/`。
+AutoDL 机器按时计费，换机器时需要迁移微调产出和课程数据：
+
+```bash
+# ---------- 旧机器上打包 ----------
+bash environment/pack_migration.sh                    # 默认: must + should
+bash environment/pack_migration.sh --level must       # 只打必带（微调产出 + 课程数据）
+bash environment/pack_migration.sh --level all        # 全量（含基座模型，很慢）
+
+# ---------- 新机器上解包 ----------
+cd /root/autodl-tmp/ai-engineering
+tar xzf ai-migration-*.tar.gz
+bash setup.sh                                          # 补环境
+python environment/download_models.py --target autodl  # 补缺失的基座模型
+```
+
+迁移优先级：
+
+| 优先级 | 目录 | 说明 |
+|---|---|---|
+| 🔴 必带 | `models/finetuned/` | 微调产出，不可重新下载 |
+| 🔴 必带 | `datasets/course/` | 课程专属数据，可能无法重新下载 |
+| 🟡 建议带 | `datasets/public/` | 可重新下载但省时间 |
+| 🟢 可不带 | `models/pretrained/` | 大，`download_models.py` 可重新拉 |
+| 🟢 可不带 | `checkpoints/` | 除非要断点续训 |
+
+---
+
+## �� 工程约定
+
+- **大文件不进 Git**：权重、数据集、密钥、产出均在 `.gitignore` 中
+- **配置驱动**：`env_config.yaml` 是资源清单单一真源，增删模型改 YAML 重跑 download 脚本
+- **ModelScope 优先**：`backend: "auto"` 优先 ModelScope 下载，失败回退 HuggingFace
+- **双平台自动过滤**：download 脚本按 `runtime` 字段只拉当前平台需要的资源
+- **按用途分流**：模型分 pretrained/finetuned，数据集分 public/course，迁移优先级清晰
+- **编号排序**：模块 / 章节目录统一 `0X-` 前缀，文件管理器天然按学习顺序排列
+- **重包隔离**：`bitsandbytes` / `trl` 等只 AutoDL 装，Mac 绝不会误装 CUDA torch
+- **资源落数据盘**：AutoDL 用绝对路径 `/root/autodl-tmp/`，Mac 用项目内相对路径
 
 ---
 
