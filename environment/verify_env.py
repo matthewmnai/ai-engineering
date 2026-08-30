@@ -43,7 +43,7 @@ def check_cuda():
         print(f"  可用: {available}")
         if available:
             print(f"  设备: {torch.cuda.get_device_name(0)}")
-            print(f"  显存: {torch.cuda.get_device_properties(0).total_mem / 1024**3:.1f} GB")
+            print(f"  显存: {torch.cuda.get_device_properties(0).total_memory / 1024**3:.1f} GB")
     except ImportError:
         print("\n[CUDA] torch 未安装，跳过检测")
 
