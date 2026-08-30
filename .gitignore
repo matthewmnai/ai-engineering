@@ -1,0 +1,93 @@
+# ===== Python 通用 =====
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# ===== 虚拟环境 conda/venv =====
+.venv/
+venv/
+env/
+ai_env/
+unsloth_env/
+conda-env/
+
+# ===== 模型权重、LoRA、Checkpoint【最重要，禁止提交大权重到Git】 =====
+*.bin
+*.safetensors
+*.pt
+*.pth
+*.ckpt
+*.adapter
+*.gguf
+checkpoint-*/
+lora_outputs/
+outputs/
+train_output/
+model_cache/
+hf_cache/
+models/
+
+# ===== 数据集（大文件不上git；少量小样例json可保留） =====
+*.parquet
+*.arrow
+*.zst
+data/
+dataset/
+raw_data/
+/vlm
+
+# ===== 日志、中间输出 =====
+*.log
+logs/
+*.out
+*.err
+wandb/
+runs/
+tensorboard/
+
+# ===== Notebook =====
+.ipynb_checkpoints
+*.ipynb
+
+# ===== 环境密钥配置，防止泄露PAT、API_KEY =====
+.env
+.env.local
+.env.*
+*.local
+config.secret.yaml
+
+# ===== AutoDL 临时目录 =====
+autodl-tmp/
+tmp/
+temp/
+
+# ===== 媒体文件 图片视频 =====
+*.png
+*.jpg
+*.jpeg
+*.bmp
+*.mp4
+*.gif
+
+# ===== OS系统垃圾 =====
+.DS_Store
+Thumbs.db
+
+# ===== IDE =====
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
