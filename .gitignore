@@ -45,7 +45,7 @@ checkpoints/
 # Unsloth 运行时生成的 Triton 编译缓存（按 GPU 架构 JIT 产物，跨机器不通用）
 unsloth_compiled_cache/
 
-# ===== 数据集（大文件不上git；少量小样例json可保留在 assets/） =====
+# ===== 数据集（大文件不上git；小数据需入git时直接放 courses/ 课程目录下） =====
 *.parquet
 *.arrow
 *.zst
@@ -53,9 +53,7 @@ data/
 dataset/
 datasets/
 # datasets/ 下分 public（公开，可重新下载）和 course（课程专属，迁移必带）
-# 只有 assets/course/ 下的入库小文件保留
-!assets/
-!assets/**
+# 两边都不入 Git，用 download_datasets.py 拉取
 
 # ===== 日志、中间输出 =====
 *.log

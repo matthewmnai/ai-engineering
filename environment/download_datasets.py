@@ -4,7 +4,6 @@
   1. backend="auto" → 优先 ModelScope，失败回退 HuggingFace
   2. type="public" → 存 datasets/public/，type="course" → 存 datasets/course/
   3. --target mac|autodl|all 按 runtime 字段过滤
-  4. course 类型用本地 assets/ 小文件，不远程下载
 
 用法:
     python environment/download_datasets.py --target autodl
@@ -114,10 +113,10 @@ def download_one(item: dict, paths: dict, preferred_backend: str) -> bool:
     ds_type = item.get("type", "public")  # public / course
     backend = item.get("backend", "auto")
 
-    # course 类型：本地小文件，只确保目录存在
-    if ds_type == "course" or "path" in item:
-        p = item.get("path", "")
-        target = ROOT / p if p and not os.path.isabs(p) else Path(p)
+    # course 类型：课程专属数据，落 datasets/course/<subdir>/（迁移打包）
+    if ds_type == "course":
+        base_dir = paths.get("datasets_course", "datasets/course")
+        target = Path(base_dir) / get_subdir(item, name)
         os.makedirs(target, exist_ok=True)
         print(f"  📂  课程数据目录: {target}")
         return True

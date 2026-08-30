@@ -26,13 +26,37 @@
 
 ## 运行说明
 
+本目录下的 `setup.sh` 会自动完成两步初始化：
+
 ```bash
 bash setup.sh
-python environment/verify_env.py
+```
 
-# 拉取本模块所需数据集（课程专属 + 公开数据集）
+脚本内部流程：
+
+| 步骤 | 动作 | 说明 |
+|:-:|---|---|
+| step1 | 调用项目根 `setup.sh` | 安装依赖（common + gpu）、配置 HF 镜像、创建资源目录、运行 `verify_env.py` 自检 |
+| step2 | 下载本模块模型 | `python environment/download_models.py --target autodl 04_training`（已下载的模型会自动跳过） |
+
+如需本模块数据集，单独执行（`setup.sh` 未包含）：
+
+```bash
 python environment/download_datasets.py --target autodl 04_training
 ```
 
-- 样例数据放在 `data/`，大文件不入库
+### 目录结构
+
+```
+datasets/
+├── public/           # 公开数据集（脚本下载，🟡 建议迁移）
+└── course/
+    └── 04_training/  # 课程大数据（🔴 必带迁移，pack_migration.sh 自动打包）
+
+src/                  # 数据清洗脚本
+outputs/              # 清洗产出（git 忽略）
+```
+
+- 课程数据放在 `datasets/course/04_training/`（跨机器迁移由 `pack_migration.sh` 自动打包）
+- 小样例 json/txt 可直接放本课程目录下（随 git 同步）
 - 数据清洗脚本位于 `src/`，清洗产出写入 `outputs/`

@@ -48,15 +48,25 @@ done
 # ---------- 构建文件列表 ----------
 INCLUDE=()
 
+# 判断目录是否有实际内容（排除 .gitkeep 占位文件）
+has_real_content() {
+  local dir="$1"
+  [ -d "$dir" ] || return 1
+  # 过滤掉 .gitkeep 后检查是否还有文件
+  local count
+  count=$(find "$dir" -type f ! -name '.gitkeep' 2>/dev/null | head -1)
+  [ -n "$count" ]
+}
+
 # 🔴 必带：微调产出 + 课程数据
-if [ -d "models/finetuned" ] && [ -n "$(ls -A models/finetuned 2>/dev/null)" ]; then
+if has_real_content "models/finetuned"; then
   INCLUDE+=("models/finetuned")
   echo "🔴 打包: models/finetuned/  (微调产出，不可再生)"
 else
   echo "⏭️  跳过: models/finetuned/  (不存在或为空)"
 fi
 
-if [ -d "datasets/course" ] && [ -n "$(ls -A datasets/course 2>/dev/null)" ]; then
+if has_real_content "datasets/course"; then
   INCLUDE+=("datasets/course")
   echo "🔴 打包: datasets/course/  (课程专属数据)"
 else
@@ -65,7 +75,7 @@ fi
 
 # 🟡 建议带：公开数据集
 if [ "$LEVEL" = "should" ] || [ "$LEVEL" = "all" ]; then
-  if [ -d "datasets/public" ] && [ -n "$(ls -A datasets/public 2>/dev/null)" ]; then
+  if has_real_content "datasets/public"; then
     INCLUDE+=("datasets/public")
     echo "🟡 打包: datasets/public/  (公开数据集，省下载时间)"
   else
@@ -75,11 +85,11 @@ fi
 
 # 🟢 可不带：基座模型 + checkpoints
 if [ "$LEVEL" = "all" ]; then
-  if [ -d "models/pretrained" ] && [ -n "$(ls -A models/pretrained 2>/dev/null)" ]; then
+  if has_real_content "models/pretrained"; then
     INCLUDE+=("models/pretrained")
     echo "🟢 打包: models/pretrained/  (基座模型，很大)"
   fi
-  if [ -d "checkpoints" ] && [ -n "$(ls -A checkpoints 2>/dev/null)" ]; then
+  if has_real_content "checkpoints"; then
     INCLUDE+=("checkpoints")
     echo "🟢 打包: checkpoints/  (训练中间状态)"
   fi

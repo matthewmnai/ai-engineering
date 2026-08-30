@@ -34,5 +34,7 @@ python environment/verify_env.py
 python environment/download_models.py --target autodl 04_training
 ```
 
-- 质检图像样例放在 `data/`，检测脚本与推理服务位于 `src/`
+- 质检图像样例放在 `datasets/course/04_training/`（迁移自动打包）
+- 小样例可直接放本课程目录下（随 git 同步）
+- 检测脚本与推理服务位于 `src/`
 - 质检结果与可视化输出写入 `outputs/`

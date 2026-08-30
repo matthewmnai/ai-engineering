@@ -34,5 +34,6 @@ python environment/verify_env.py
 python environment/download_models.py --target autodl 04_training
 ```
 
-- 图像样例放在 `data/`，大图不入库
+- 图像样例放在 `datasets/course/04_training/`（大图不入库，迁移自动打包）
+- 小样例可直接放本课程目录下（随 git 同步）
 - 多模态微调脚本位于 `src/`

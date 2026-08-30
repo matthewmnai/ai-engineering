@@ -34,7 +34,6 @@ models:
 # ===== 数据集清单 =====
 # 字段同 models，额外：
 #   type —— "public"(公开数据集，可重新下载) / "course"(课程专属，需迁移)
-#   path —— 仅 type=course 时使用，指向 assets/ 下的小文件目录
 datasets:
   04_training:
     - name: "wangrui626/alpaca_chinese_demo"
@@ -45,9 +44,8 @@ datasets:
   # 05_rag:
   #   - name: "course_rag_sample"
   #     type: "course"
-  #     path: "assets/course/05-rag"
   #     runtime: "both"
-  #     usage: "课程专属RAG知识库小样例（入库小文件，两边都有）"
+  #     usage: "课程专属RAG知识库样例"
 
 # ===== 资源根目录 =====
 # 目录按用途分，迁移时按优先级打包：

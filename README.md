@@ -106,9 +106,10 @@ ai-engineering/
 ├── models/                             # ✅ 资源目录（setup.sh 自动创建，不入 Git）
 │   ├── pretrained/                     #   基座模型（大，可重新下载 🟢）
 │   └── finetuned/                      #   微调产出（不可再生，迁移必带 🔴）
-├── datasets/                           # ✅ 数据集目录
+├── datasets/                           # ✅ 数据集目录（不入 Git，pack_migration.sh 打包）
 │   ├── public/                         #   公开数据集（可重新下载，建议带 🟡）
 │   └── course/                         #   课程专属数据（迁移必带 🔴）
+│       └── 04_training/                #     模块4 课程数据
 ├── checkpoints/                        # ✅ 训练中间状态（断点续训，可选 🟢）
 ├── outputs/                           # ✅ 训练日志 / 评估结果（不迁移）
 ├── logs/                              # ✅ 运行日志
@@ -129,8 +130,7 @@ ai-engineering/
 │   └── 07-deployment/                  #   规划中 ⭐ 必须 AutoDL
 │
 ├── projects/                           # 🏭 规划中 —— 工业级综合项目
-├── assets/                             # 🗂️ 规划中 —— 入库的小样例数据
-└── docs/                               # � 规划中
+└── docs/                               # 📄 规划中
 ```
 
 ### 依赖分层
@@ -148,8 +148,10 @@ requirements-modules/*.txt   # tensorflow / unsloth / sglang —— 按需、只
 courses/NN-name/0X-chapter-name/
 ├── README.md          # 学习目标 + 知识点 + 运行说明 + 环境标签
 ├── src/               # 练习代码
-├── data/              # 本章小样例（大文件不入库）
 └── outputs/           # 运行产出（git 忽略）
+
+课程数据统一存放在 datasets/course/<module>/（脚本下载/手动放入，pack_migration.sh 自动打包）
+小数据需入 Git 时直接放对应 courses/ 课程目录下
 ```
 
 ---
@@ -292,7 +294,6 @@ datasets:
   05_rag:
     - name: "course_rag_sample"
       type: "course"            # 课程专属数据，存到 datasets/course/
-      path: "assets/course/05-rag"
       runtime: "both"
 
 # 路径按平台 + 用途分
