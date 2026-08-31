@@ -1,0 +1,116 @@
+{
+  "meta": {
+    "data_source": "医疗数据-演示样本",
+    "total_samples": 5,
+    "report_time": "2026-08-23 22:06:37"
+  },
+  "question_length": {
+    "field": "question",
+    "count": 5,
+    "min_length": 10,
+    "max_length": 16,
+    "mean_length": 12.2,
+    "median_length": 12,
+    "p10": 10,
+    "p90": 16,
+    "very_short_count": 0,
+    "very_long_count": 0
+  },
+  "answer_length": {
+    "field": "answer",
+    "count": 5,
+    "min_length": 65,
+    "max_length": 108,
+    "mean_length": 86.8,
+    "median_length": 90,
+    "p10": 65,
+    "p90": 108,
+    "very_short_count": 0,
+    "very_long_count": 0
+  },
+  "language_consistency": {
+    "total_samples": 10,
+    "chinese_dominant": 10,
+    "english_dominant": 0,
+    "mixed_language": 0,
+    "chinese_ratio": 1.0
+  },
+  "format_compliance": {
+    "total": 5,
+    "compliant": 5,
+    "compliance_rate": 1.0,
+    "issues": {}
+  },
+  "field_completeness": {
+    "department": {
+      "filled": 5,
+      "empty": 0,
+      "fill_rate": 1.0
+    },
+    "input": {
+      "filled": 5,
+      "empty": 0,
+      "fill_rate": 1.0
+    },
+    "instruction": {
+      "filled": 5,
+      "empty": 0,
+      "fill_rate": 1.0
+    },
+    "output": {
+      "filled": 5,
+      "empty": 0,
+      "fill_rate": 1.0
+    }
+  },
+  "question_duplicates": {
+    "total": 5,
+    "unique": 5,
+    "duplicates": 0,
+    "duplicate_rate": 0.0
+  },
+  "answer_duplicates": {
+    "total": 5,
+    "unique": 5,
+    "duplicates": 0,
+    "duplicate_rate": 0.0
+  },
+  "category_distribution": {
+    "total_categories": 3,
+    "total_samples": 5,
+    "distribution": {
+      "内科": {
+        "count": 3,
+        "ratio": 0.6
+      },
+      "儿科": {
+        "count": 1,
+        "ratio": 0.2
+      },
+      "妇产科": {
+        "count": 1,
+        "ratio": 0.2
+      }
+    }
+  },
+  "token_estimation": {
+    "count": 5,
+    "min_tokens": 97,
+    "max_tokens": 141,
+    "mean_tokens": 117.0,
+    "median_tokens": 111,
+    "over_512": 0,
+    "over_1024": 0,
+    "over_2048": 0
+  },
+  "quality_score": {
+    "format_score": 20.0,
+    "completeness_score": 20.0,
+    "language_score": 15.0,
+    "uniqueness_score": 15.0,
+    "length_score": 15.0,
+    "diversity_score": 7.5,
+    "total_score": 92.5,
+    "grade": "A (优秀)"
+  }
+}
