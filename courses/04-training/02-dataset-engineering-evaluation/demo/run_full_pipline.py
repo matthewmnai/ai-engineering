@@ -34,6 +34,13 @@ _c.ENDPOINT = "https://hf-mirror.com"
 import json
 import argparse
 
+# 确保项目根在 sys.path，使 paths.py 能被导入
+from pathlib import Path
+_PROJECT_ROOT = str(Path(__file__).resolve().parents[4])
+if _PROJECT_ROOT not in sys.path:
+    sys.path.insert(0, _PROJECT_ROOT)
+from environment.paths import MODELS_PRETRAINED, get_model_dir, COURSE_04_02
+
 # 工作目录设置
 # 设置工作目录 ai-engineering/courses/04-training/02-dataset-engineering-evaluation
 SCRIPT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -41,7 +48,7 @@ os.chdir(SCRIPT_DIR)
 PROJET_DIR = os.getcwd()
 
 # 全局路径配置
-DATA_DIR = os.path.join(PROJET_DIR, "data", "Data_中文医疗数据")
+DATA_DIR = os.path.join(COURSE_04_02, "中文医疗数据")
 OUTPUT_DIR = os.path.join(PROJET_DIR, "outputs")
 OUTPUT_DIR_STEP1 = os.path.join(OUTPUT_DIR, "step1_data_clean")
 OUTPUT_DIR_STEP2 = os.path.join(OUTPUT_DIR, "step2_data_quality")
@@ -53,8 +60,8 @@ os.makedirs(OUTPUT_DIR_STEP2, exist_ok=True)
 os.makedirs(OUTPUT_DIR_STEP3, exist_ok=True)
 os.makedirs(OUTPUT_DIR_STEP4, exist_ok=True)
 os.makedirs(OUTPUT_DIR_STEP6, exist_ok=True)
-LOCAL_MODEL_DIR = os.path.join(PROJET_DIR, "../../../models/pretrained")
-MODEL_NAME = os.path.join(LOCAL_MODEL_DIR, "Qwen2.5-7B-Instruct")
+LOCAL_MODEL_DIR = MODELS_PRETRAINED
+MODEL_NAME = get_model_dir("Qwen2.5-7B-Instruct", "pretrained")
 
 # ============================================================
 # Step 1: 数据收集与清洗

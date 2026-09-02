@@ -29,6 +29,11 @@ models:
       runtime: "autodl"
       type: "pretrained"
       usage: "LoRA/QLoRA微调练习(小卡可跑)"
+    - name: "Qwen/Qwen2.5-VL-3B-Instruct"
+      backend: "auto"
+      runtime: "autodl"
+      type: "pretrained"
+      usage: "多模态蒸馏 & 车险图像定损"
 
 
 # ===== 数据集清单 =====
@@ -37,10 +42,15 @@ models:
 datasets:
   04_training:
     - name: "AI-ModelScope/alpaca-cleaned"
-      backend: "auto"
+      backend: "modelscope"        # ModelScope repo_id，HF 上叫 yahma/alpaca-cleaned
       runtime: "autodl"
       type: "public"
-      usage: "alpaca-cleaned数据集"
+      usage: "alpaca-cleaned数据集(03蒸馏)"
+    - name: "AI-ModelScope/gsm8k"
+      backend: "modelscope"        # ModelScope repo_id，HF 上叫 openai/gsm8k
+      runtime: "autodl"
+      type: "public"
+      usage: "GSM8K数学推理数据集(03蒸馏-R1)"
   # 05_rag:
   #   - name: "course_rag_sample"
   #     type: "course"

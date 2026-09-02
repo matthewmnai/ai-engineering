@@ -17,7 +17,14 @@ import sys
 import argparse
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parents[1]
+# 确保项目根在 sys.path，使 `from environment.xxx` 能直接 import
+_PROJECT_ROOT = str(Path(__file__).resolve().parents[1])
+if _PROJECT_ROOT not in sys.path:
+    sys.path.insert(0, _PROJECT_ROOT)
+
+# 路径统一从 paths.py 导入（单一真实源，避免各脚本重复定义）
+from environment.paths import ROOT, detect_platform, resolve_paths
+
 CONFIG_PATH = ROOT / "environment" / "env_config.yaml"
 
 
@@ -25,29 +32,6 @@ def load_config():
     import yaml
     with open(CONFIG_PATH, "r", encoding="utf-8") as f:
         return yaml.safe_load(f)
-
-
-def detect_platform():
-    if os.uname().sysname == "Darwin":
-        return "mac"
-    return "autodl"
-
-
-def get_paths(cfg: dict, target: str) -> dict:
-    """取当前平台对应的路径配置，相对路径自动拼 ROOT"""
-    paths_section = cfg.get("paths", {})
-    if target in paths_section and isinstance(paths_section[target], dict):
-        p = paths_section[target]
-    else:
-        # 兜底旧结构
-        p = {
-            "models_pretrained": "models/pretrained",
-            "models_finetuned": "models/finetuned",
-        }
-    result = {}
-    for k, v in p.items():
-        result[k] = v if os.path.isabs(v) else str(ROOT / v)
-    return result
 
 
 def should_download(item: dict, target: str) -> bool:
@@ -170,7 +154,7 @@ def main():
             os.environ["HF_ENDPOINT"] = mirror
 
     preferred = cfg.get("env", {}).get("preferred_backend", "modelscope")
-    paths = get_paths(cfg, target)
+    paths = resolve_paths(target)
 
     # 创建目录
     for key in ["models_pretrained", "models_finetuned"]:

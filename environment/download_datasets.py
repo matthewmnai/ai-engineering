@@ -15,7 +15,14 @@ import sys
 import argparse
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parents[1]
+# 确保项目根在 sys.path，使 `from environment.xxx` 能直接 import
+_PROJECT_ROOT = str(Path(__file__).resolve().parents[1])
+if _PROJECT_ROOT not in sys.path:
+    sys.path.insert(0, _PROJECT_ROOT)
+
+# 路径统一从 paths.py 导入（单一真实源，避免各脚本重复定义）
+from environment.paths import ROOT, detect_platform, resolve_paths
+
 CONFIG_PATH = ROOT / "environment" / "env_config.yaml"
 
 
@@ -23,27 +30,6 @@ def load_config():
     import yaml
     with open(CONFIG_PATH, "r", encoding="utf-8") as f:
         return yaml.safe_load(f)
-
-
-def detect_platform():
-    if os.uname().sysname == "Darwin":
-        return "mac"
-    return "autodl"
-
-
-def get_paths(cfg: dict, target: str) -> dict:
-    paths_section = cfg.get("paths", {})
-    if target in paths_section and isinstance(paths_section[target], dict):
-        p = paths_section[target]
-    else:
-        p = {
-            "datasets_public": "datasets/public",
-            "datasets_course": "datasets/course",
-        }
-    result = {}
-    for k, v in p.items():
-        result[k] = v if os.path.isabs(v) else str(ROOT / v)
-    return result
 
 
 def should_download(item: dict, target: str) -> bool:
@@ -76,35 +62,56 @@ def get_subdir(item: dict, name: str) -> str:
 
 
 def download_huggingface_ds(name: str, target_dir: str) -> bool:
+    """用 huggingface-cli 下载 HF 数据集源文件（JSON/Parquet 等）"""
+    import subprocess
+    cmd = [
+        "huggingface-cli", "download",
+        name,
+        "--repo-type", "dataset",
+        "--local-dir", target_dir,
+    ]
+    # HF_ENDPOINT 已在 main() 里设好，CLI 自动读取
     try:
-        from datasets import load_dataset
-        ds = load_dataset(name)
-        ds.save_to_disk(target_dir)
-        return True
-    except Exception as e:
-        print(f"    ↳ HuggingFace 失败: {e}")
+        result = subprocess.run(cmd, capture_output=True, text=True, timeout=600)
+        if result.returncode == 0:
+            return True
+        print(f"    ↳ HuggingFace CLI 失败: {result.stderr.strip().split(chr(10))[-1]}")
+        return False
+    except FileNotFoundError:
+        print(f"    ↳ huggingface-cli 未安装")
+        return False
+    except subprocess.TimeoutExpired:
+        print(f"    ↳ HuggingFace CLI 超时")
         return False
 
 
 def download_modelscope_ds(name: str, target_dir: str) -> bool:
-    """用 ModelScope 下载数据集"""
+    """用 modelscope CLI 下载 ModelScope 数据集源文件（JSON/Parquet 等）
+
+    相比 MsDataset.load() + save_to_disk()：
+      1. 避开 datasets 版本不兼容问题（verification_mode 等）
+      2. 保留源文件目录结构（main/socratic 等 config 子目录）
+      3. 产物可直接被 load_dataset(".../dir", "config") 消费
+    """
+    import subprocess
+    cmd = [
+        "modelscope", "download",
+        "--dataset", name,
+        "--local_dir", target_dir,
+    ]
     try:
-        from modelscope.msdatasets import MsDataset
-        # ModelScope 的数据集下载
-        ds = MsDataset.load(name)
-        # MsDataset 返回的是兼容 HF datasets 格式的对象
-        if hasattr(ds, 'save_to_disk'):
-            ds.save_to_disk(target_dir)
-        else:
-            # 转成 HF datasets 格式再保存
-            import datasets
-            if isinstance(ds, datasets.DatasetDict):
-                ds.save_to_disk(target_dir)
-            else:
-                datasets.Dataset.from_dict(ds[:]).save_to_disk(target_dir)
-        return True
-    except Exception as e:
-        print(f"    ↳ ModelScope 失败: {e}")
+        result = subprocess.run(cmd, capture_output=True, text=True, timeout=600)
+        if result.returncode == 0:
+            return True
+        # modelscope CLI 的错误信息在 stdout 最后一行
+        tail = result.stdout.strip().splitlines()[-2:] if result.stdout else []
+        print(f"    ↳ ModelScope CLI 失败: {' | '.join(tail)}")
+        return False
+    except FileNotFoundError:
+        print(f"    ↳ modelscope CLI 未安装（pip install modelscope）")
+        return False
+    except subprocess.TimeoutExpired:
+        print(f"    ↳ ModelScope CLI 超时")
         return False
 
 
@@ -166,7 +173,7 @@ def main():
             os.environ["HF_ENDPOINT"] = mirror
 
     preferred = cfg.get("env", {}).get("preferred_backend", "modelscope")
-    paths = get_paths(cfg, target)
+    paths = resolve_paths(target)
 
     # 创建目录
     for key in ["datasets_public", "datasets_course"]:

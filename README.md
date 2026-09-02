@@ -95,6 +95,7 @@ ai-engineering/
 │   ├── download_models.py              #   批量拉模型（ModelScope优先 + --target 过滤）
 │   ├── download_datasets.py            #   批量拉数据集（ModelScope优先 + --target 过滤）
 │   ├── pack_migration.sh               #   跨 AutoDL 机器迁移打包脚本
+│   ├── paths.py                        #   路径单一真实源：从 env_config.yaml 读 + 平台自动检测 + 便捷 helper
 │   ├── env_config.yaml                 #   统一配置（backend/runtime/type + 分平台路径）
 │   ├── requirements-common.txt         #   两边通用轻量依赖（openai / langchain / pyyaml …）
 │   ├── requirements-mac.txt            #   只 Mac：CPU torch + sentence-transformers
@@ -269,6 +270,7 @@ courses/NN-name/0X-chapter-name/
 | [download_models.py](environment/download_models.py) | ModelScope 优先批量拉模型，按 type 分流到 pretrained/finetuned | `--target mac\|autodl\|all` |
 | [download_datasets.py](environment/download_datasets.py) | ModelScope 优先批量拉数据集，按 type 分流到 public/course | 同上 |
 | [pack_migration.sh](environment/pack_migration.sh) | 跨 AutoDL 机器迁移打包 | `--level must\|should\|all` |
+| [paths.py](environment/paths.py) | 路径单一真实源：自动检测平台、解析 env_config.yaml 路径、提供便捷 helper | `from environment.paths import MODELS_PRETRAINED, get_model_dir` |
 | [env_config.yaml](environment/env_config.yaml) | 统一配置：backend/runtime/type + 分平台路径 | 编辑此文件 |
 | requirements-*.txt | common / mac / gpu 三层依赖 | 分别被对应 setup 脚本安装 |
 
@@ -345,6 +347,7 @@ python environment/download_models.py --target autodl  # 补缺失的基座模�
 
 - **大文件不进 Git**：权重、数据集、密钥、产出均在 `.gitignore` 中
 - **配置驱动**：`env_config.yaml` 是资源清单单一真源，增删模型改 YAML 重跑 download 脚本
+- **路径统一真实源**：所有脚本的路径常量从 `environment/paths.py` 导入，paths.py 读取 `env_config.yaml` 的 paths 节 + 自动检测平台，各脚本不再各自硬编码 ROOT 或 `detect_platform()`
 - **ModelScope 优先**：`backend: "auto"` 优先 ModelScope 下载，失败回退 HuggingFace
 - **双平台自动过滤**：download 脚本按 `runtime` 字段只拉当前平台需要的资源
 - **按用途分流**：模型分 pretrained/finetuned，数据集分 public/course，迁移优先级清晰
