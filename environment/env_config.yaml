@@ -36,11 +36,11 @@ models:
 #   type —— "public"(公开数据集，可重新下载) / "course"(课程专属，需迁移)
 datasets:
   04_training:
-    - name: "wangrui626/alpaca_chinese_demo"
+    - name: "AI-ModelScope/alpaca-cleaned"
       backend: "auto"
       runtime: "autodl"
       type: "public"
-      usage: "中文微调样例"
+      usage: "alpaca-cleaned数据集"
   # 05_rag:
   #   - name: "course_rag_sample"
   #     type: "course"
