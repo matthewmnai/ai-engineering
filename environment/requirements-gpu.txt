@@ -12,26 +12,30 @@ torchvision==0.20.1
 torchaudio==2.5.1
 
 # HF 生态 + 微调核心
-transformers==4.51.3
+transformers>=4.55.2,<=4.56.2   # 同时满足 vllm(>=4.55.2) 与 unsloth(<=4.56.2)
 accelerate==1.7.0
-peft==0.20.0
-trl==0.25.1
-datasets==2.19.1
+peft==0.20.0                         # 0.15.0 太老，不兼容 transformers>=4.55
+trl==0.15.1
+datasets>=3.4.1,!=4.0.*,!=4.1.0  # unsloth 2025.10.8 下限 + 排除有 breaking change 的 4.0/4.1.0
 sentence-transformers==3.3.0
 
 # modelscope 备用国内模型源
 modelscope>=1.18.0
 
-# 量化（bitsandbytes 在 Mac 上编译不了，只 Linux GPU 可用）
-bitsandbytes==0.45.4
+# 量化（bitsandbytes 在 Mac 上编译不了，只 Linux GPU 可用；unsloth 2025.10.8 要求 >=0.45.5）
+bitsandbytes>=0.45.5,!=0.46.0,!=0.48.0
 
 # 微调加速（锁版本，两版本配套；只支持 Linux + CUDA，Mac 不可用）
-# unsloth_zoo 2025.10.7 不依赖 torchao，兼容 torch 2.5.1
+# unsloth 2025.10.8 硬要求 unsloth_zoo>=2025.10.9，兼容 torch 2.5.1
 unsloth==2025.10.8
-unsloth_zoo==2025.10.7
+unsloth_zoo>=2025.10.9
+# ⚠️ 不在此声明 torchao —— setup 脚本会在安装完后主动卸载它
+# 原因：unsloth_zoo 2025.10.x 硬依赖 torchao，但 torchao 0.9~0.16
+#       全部用了 torch.int1，这是 torch 2.11 才引入的 dtype，和 torch 2.5.1 不兼容
+#       unsloth 实际用 bitsandbytes 做量化，torchao 可安全移除
 
 # 推理引擎
-vllm==0.11.0
+vllm==0.7.3                       # 0.11 硬绑 torch==2.8，降版到 0.7.3 兼容 torch 2.5.1
 
 # 实验追踪
 wandb==0.19.11
@@ -40,6 +44,6 @@ wandb==0.19.11
 numpy==1.26.4
 scipy==1.13.1            # 兼容 numpy 1.26.x；scipy>=1.14 需要 numpy>=2.0
 packaging==25.0
-pandas==2.3.3
+pandas==2.2.0
 
 

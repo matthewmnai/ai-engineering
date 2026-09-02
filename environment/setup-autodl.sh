@@ -65,20 +65,60 @@ export UV_SYSTEM_PYTHON=1
 echo "  ✅ 当前 Python: $(python -V 2>&1)"
 echo "  ✅ uv 版本: $(uv --version 2>&1)"
 
-# ---------- [1] uv 国内源 ----------
+# ---------- [1] 双源配置 ----------
+# 主源：阿里云镜像（加速通用包下载）
+# 额外源：PyTorch 官方 CUDA wheel（torch+cu124 后缀包只有这里才有）
 echo ""
-echo "[1/4] 配置 uv 清华源..."
-export UV_INDEX_URL=https://pypi.tuna.tsinghua.edu.cn/simple
+echo "[1/4] 配置双源（阿里云 + PyTorch CUDA）..."
+export PIP_INDEX_URL=https://mirrors.aliyun.com/pypi/simple
+export PIP_EXTRA_INDEX_URL=https://download.pytorch.org/whl/cu124
+export UV_INDEX_URL=https://mirrors.aliyun.com/pypi/simple
+export UV_EXTRA_INDEX_URL=https://download.pytorch.org/whl/cu124
+# 持久化 pip 配置（uv 也会读这个）
+mkdir -p ~/.pip
+if ! grep -qxF 'index-url = https://mirrors.aliyun.com/pypi/simple' ~/.pip/pip.conf 2>/dev/null; then
+  cat >> ~/.pip/pip.conf <<EOF
+
+[global]
+index-url = https://mirrors.aliyun.com/pypi/simple
+extra-index-url = https://download.pytorch.org/whl/cu124
+trusted-host = mirrors.aliyun.com
+EOF
+  echo "  → pip 双源配置已持久化到 ~/.pip/pip.conf"
+fi
+echo "  ✅ 主源: https://mirrors.aliyun.com/pypi/simple"
+echo "  ✅ CUDA: https://download.pytorch.org/whl/cu124"
 
 # ---------- [2] 安装依赖（common → gpu）----------
 echo ""
 echo "[2/4] 安装依赖（common + gpu，首次较久）..."
 
+# uv 的默认安全策略：一个包只从最先出现它的源里找所有版本
+# 但 PyTorch CUDA 源是不完整的镜像（只有 torch+cu124 wheel），
+# 会导致 packaging / numpy 这类通用包找不到指定版本
+# 两个源都可信，改用 unsafe-best-match 让 uv 从所有源里拼版本
+UV_INSTALL="uv pip install --index-strategy unsafe-best-match"
+
 # common（两边通用轻量包）
-uv pip install -r "${PROJECT_ROOT}/environment/requirements-common.txt"
+${UV_INSTALL} -r "${PROJECT_ROOT}/environment/requirements-common.txt"
 
 # gpu（torch + CUDA 生态 —— 如果已有 CUDA torch 会跳过）
-uv pip install -r "${PROJECT_ROOT}/environment/requirements-gpu.txt"
+${UV_INSTALL} -r "${PROJECT_ROOT}/environment/requirements-gpu.txt"
+
+# ---------- [2.5] torchao 卸载（和 torch 2.5.1 不兼容）----------
+# unsloth_zoo 2025.10.x 硬依赖 torchao，但 torchao 0.9~0.16 全部用了 torch.int1
+# （这是 torch 2.11 才引入的 dtype），一 import 就 AttributeError。
+# 解法：卸载 torchao + 用 --no-deps 重装 unsloth_zoo 绕过依赖声明。
+# unsloth 实际用 bitsandbytes 做量化，torchao 可安全移除。
+echo ""
+echo "[2.5/4] 卸 torchao（和 torch 2.5.1 不兼容）..."
+uv pip uninstall torchao -y 2>/dev/null || true
+# 清理残留文件（pip 卸载可能漏掉 dist-info）
+rm -rf "$(python -c 'import site; print(site.getsitepackages()[0])')/torchao"* 2>/dev/null || true
+# 绕过 unsloth_zoo 对 torchao 的硬依赖，强制重装
+uv pip install --no-deps "unsloth_zoo>=2025.10.9" 2>/dev/null || \
+  pip install --no-deps "unsloth_zoo>=2025.10.9"
+echo "  ✅ torchao 已移除，unsloth_zoo 以 --no-deps 模式重装"
 
 # CUDA 版本提示
 CUDA_VER=$(python -c "import torch; print(torch.version.cuda or 'CPU')" 2>/dev/null || echo "unknown")
