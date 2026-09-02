@@ -99,3 +99,14 @@ Thumbs.db
 *.swo
 *~
 
+# ===== 课程内容保留（courses/ 下的合法素材不入忽略） =====
+!courses/**/*.parquet
+!courses/**/*.arrow
+!courses/**/*.zst
+!courses/**/*.png
+!courses/**/*.jpg
+!courses/**/*.jpeg
+!courses/**/*.bmp
+!courses/**/*.gif
+!courses/**/*.ipynb
+

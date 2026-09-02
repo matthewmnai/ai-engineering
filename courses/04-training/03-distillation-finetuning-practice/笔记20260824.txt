@@ -1,0 +1,450 @@
+Q：微调这些操作只能用linux吗 windows服务器可以吗
+可以，看是否有GPU
+
+Q：qlora微调出来的只能应用于4b量化模型吗？
+
+Q：那什么vllm好像windows下不了
+linux环境下
+
+Q：minimax h3 模型没有128g 要怎么部署
+多卡部署，500G
+
+Q：我们一般项目如何确定模型大小，和相关业务数据量有关吗？
+看业务场景的难度
+个人的话： 7B
+企业使用：32B
+
+Q：找工作 一个rag 一个agent. 项目够吗
+看匹配度
+
+
+Q：minimax h3 要128g显卡
+
+
+Q：我想要做一个自己的数字分身类似的Agent，我想实现它长期熟悉我的习惯、各种生活数据等等，等我老了可以作为我的助理和管家或护理的角色。请老师给我说说思路和方法
+RAG，个性化的偏好 preference.md
+以前做过的事
+
+Q：模型训练时的check point咱们的示例程序里有用到吗？可以基于check point 继续训练吗？
+可以 checkpoint 就是一个文件夹
+
+
+
+Q：autodl 支持多卡吗
+支持
+
+
+Q：lora过程中，是不是可以指定lora的层数？比方说只微调训练llm最后10层？这种调整常见吗？
+
+
+Q：开户光大证券后买的都是场内废单，怎么回事？
+是否在交易时间
+
+
+Q：上节课的Qwen3_5_医疗微调_GPU.py这个文件有jupyter文件吗，我在autodl只能中使用jupyter，用py文件修改，报好多错误
+.py => 贴到 jupyter进行运行
+
+Q：AI说Qwen3.5-0.8B是多模态，原代码用 Unsloth + 文本 CausalLM 加载，对 VLM 不兼容。让AI自己改吗
+
+
+Q：训练一个写作风格的模型，可以给他一些文章进行微调吗
+类似 Stable Diffusion + Lora =》 训练出不同的画风的模型
+
+
+Q：老师，股票的数据拉取，有免费的api吗，还是都是收费的？
+akshare，反爬的机制
+
+Q：neo4j数据库和chromedb数据库混合检索后还需要bm25吗
+关键词检索
+
+
+
+Q：那那些大公司的不同大小版本是从大到小的研发是么
+distill
+deepseek-v4-pro
+deepseek-v4-flash ****
+
+
+
+
+蒸馏
+
+
+Q：温度不是越高越好
+略高
+
+
+蒸馏
+
+
+Q：有点像吸星大法
+
+
+Q：开源模型 还要蒸馏吗 是不是量化模型就好了
+蒸馏是针对开源模型，比如 qwen3-4b
+gemini => 作为老师，讲知识整理好 => 给到 qwen3-4b
+
+Q：要怎么确定蒸馏的温度呢
+
+
+Q：dc--》qwen 就变成qwen系列了吗？蒸馏是大变小 还是大+小变成小pro？
+deepseek-r1-distill-qwen
+你自己用的就是 qwen，只是向老师 deepseek进行了学习（微调了qwen）
+qwen-7b 尺寸不会发生变化，还是原来的7B（model weight会发生微调）
+
+Q：如何确定我要蒸馏到多少参数
+看你的GPU显存 24G / 3 = 8B尺寸的大模型
+
+小Pro
+
+
+Q：需结合具体任务实验确定
+
+
+小家伙升级了
+
+
+Q：可以手搓一个模型去蒸馏吗？
+如果你想从0-1，使用蒸馏方法，差的有些多
+一般模型的微调，是从基座模型（qwen pretrain模型）
+
+Q：为什么服务器上有三块48Ga6000 我用ollama部署了qwen3.5的0.8b调用很慢 放进自己的agent甚至调用不起来
+0.8 * 3 =2.4G 
+
+
+Q：好模型都被蒸馏了，他优势优又是啥呢
+美国 => 创新，Fabel, ChatGPT 花的代价 很大
+中国 => 性价比，deepseek
+
+AGI 理想主义
+看财报
+
+Q：优势就是品牌。。。
+
+
+Q：对怎么提问题
+
+
+Q：微调和蒸馏的区别是数据来源，和数据内容吗
+微调 是学习的方法，Lora高效微调，在基座模型上 修改部分的操作
+蒸馏 是提供数据（老师能力强的模式，提供更好 QA） + 微调的方法
+
+Q：如何提出高质量的问题
+业务价值
+benchmark
+GSM8K 
+
+Q：蒸馏基本不会超过原来的模型，原来的模型肯定还是比蒸馏的好
+
+
+Q：通过api获取的答案并不是老师模型原生的，而是老师的助手 ，这个在之前讲过
+vllm 
+
+Q：那1000个样本是怎么从59000个样本中选出来的？是让Gemni帮忙选出来的？
+是的！
+
+Q：LLM的推理能力和回答问题有什么不同？
+
+
+Q：GRPO也是一种借鉴了系统论 的思想吗
+
+
+Q：7b 14b
+
+信息论 控制论 系统论
+
+
+接freelancer项目加fragilebc,限人在上海
+
+
+Q：这些模型不都现成的.我们还有蒸馏的必要吗
+qwen1.5B qwen3B 如果RAG能解决，就用RAG
+不能解决 => 微调 + 蒸馏
+
+Q：那学生的参数量 不一定非得比教师模型小吧， 比如教师模型是在某一方面 能力强，那我可以蒸馏微调吗
+可以
+
+Q：如果学生模型已经蒸馏的非常接近老师模型，那么我能把学生模型作为老师模型，再让更小的模型来蒸馏这个学生模型吗
+小尺寸 一般能力一般，不如大尺寸
+
+Q：AI有泡沫吗？
+
+
+Q：所以就是如果openAI和A场这些头部不创新了，国内的模型发展就会停滞吧？
+
+
+Q：开源模型策略：农村包围城市
+
+
+学生打工
+
+
+Q：蒸馏需要的数据量大概怎么估算呢？
+1000-100万
+和任务的难度，多样性相关
+难度大，多样性高 => 数据量大
+
+Q：59000个样本也是大模型生成的吗
+
+
+Q：老师，微调是学习，那LORA也是高效学习，通过LORA微调之后的模型推理能力会提高吗？
+LoRA 就是微调，会提高
+
+Q：大模型要花更多钱
+
+
+Q：让小的模型拥有更好的能力
+
+
+Q：RAG什么情况下不能解决问题？
+测试出来；
+
+
+Q：蒸馏的时候怎么知道大模型的解题思路 给的参考不是只有问题和答案吗
+Gemini Flash Thinking （有题解思路）
+S1 学习的是： Q、A 以及Gemini 中间的Reseaing
+
+低成本获取大模型的部分能力
+
+Q：参数相差这么大，应该还是有些能力达不到吧
+
+
+Q：如果蒸馏也是取知识，那rag知识的上限是什么呢
+RAG 提供一些个性化的背景
+
+
+pip install -r requirements.txt
+
+
+bitsandbytes==0.45.4
+datasets==3.1.0
+numpy==1.26.4        
+packaging==25.0
+pandas>=2.2.0
+peft==0.15.0
+torch==2.5.1
+torchvision==0.20.1
+transformers==4.51.3
+trl==0.15.2
+unsloth==2025.3.19
+unsloth_zoo==2025.3.17
+vllm==0.7.3      
+wandb==0.19.11
+accelerate==1.7.0   
+
+
+import os
+os.environ["HF_ENDPOINT"] = "https://hf-mirror.com"
+
+# 在 huggingface_hub 被加载前，直接修改它的常量
+import huggingface_hub.constants as _c
+_c.DEFAULT_ENDPOINT = "https://hf-mirror.com"
+_c.HF_ENDPOINT = "https://hf-mirror.com"
+_c.ENDPOINT = "https://hf-mirror.com"
+
+
+# 模型下载
+from modelscope import snapshot_download
+model_dir = snapshot_download('Qwen/Qwen3-4B', cache_dir='/root/autodl-tmp/models')
+
+
+Below is an instruction that describes a task, 
+paired with an input that provides further context. 
+Write a response that appropriately completes the request.
+
+### Instruction:
+{}
+
+### Input:
+{}
+
+### Response:
+{}
+
+只能用GPU吗
+
+
+Q：这个实验跟上周的有什么区别？还是sft?
+
+
+CPU跑不动吧
+
+
+CPU可以跑
+
+
+Q：这个jupter老是用不好
+
+
+Q：微调的输出损失是计算什么呢
+
+
+Q：为啥训练过程中loss在0.8几到1.1几之间波动？
+
+
+Q：是预测下一个token的损失吗
+Loss = （AI的输出 - 标准答案）
+
+Q：昨晚我试了一下，cpu跑要5.5个小时
+
+
+Q：alpacha_data_clean是指什么
+数据集的名称
+
+Q：老师，loss的数值有啥含义？多小属于效果好？多大属于不可用？有经验值么？
+
+
+Q：autodl上租4090 pytorch选什么版本比较好
+2.5.1
+
+Q：apaca是什么
+
+
+Q：可以中文蒸馏吗？
+
+
+Q：保存为啥要两步呢
+# 保存模型
+model.save_pretrained("lora_model")  # 本地保存
+tokenizer.save_pretrained("lora_model")
+
+    from unsloth import FastLanguageModel
+    model, tokenizer = FastLanguageModel.from_pretrained(
+        model_name = "lora_model",  # 训练时使用的模型
+        max_seq_length = max_seq_length,
+        dtype = dtype,
+        load_in_4bit = load_in_4bit,
+    )
+
+
+Q：为什么你本地不支持？
+本地装的是 unsloth 2025.3.19，而最新版是 2026.8.19。旧版内核只认到 qwen2，没有 qwen3_5 架构
+
+
+蒸馏就是获取了数据集吗？
+
+
+GGUF是什么
+
+
+# 定义医疗对话的提示模板
+medical_prompt = """你是一个专业的医疗助手。请根据患者的问题提供专业、准确的回答。
+
+### 问题：
+{}
+
+### 回答：
+{}"""
+
+《程序 = 算法 + 数据结构》
+AI应用 = Model + Data
+
+
+方法1：GRPO 自己探索写  <reasoning></reasoning>
+学习速度有些慢，好处是 不需要人工标注
+=> GRPOTrainer
+
+方法2：让更强老师模型来进行标注
+gemini flash thinking => Q + reasoning + A 
+=> SFTTrainer
+
+
+Q：AI自己能筛的话，那是不是就说明它已经有了那个能力啊？那为啥还要训呢
+qwen32B 假设你当时的数学能力还不强
+
+qwen32B 如果让你回答某一个数学难题
+A1, A2, ... A100 （回答质量不高）
+
+qwen32 筛选 A1-A100中 谁回答的好
+
+
+
+如果一个基座，然后把各大模型都逐一蒸馏，是不是可以得到一个 能力很强的模型
+
+
+叫qwen_vl_car_insurance_train
+
+
+qwen_vl_car_insurance_train.py
+
+
+Q：多模态的py文件中没有吗？
+
+
+ModuleNotFoundError: No module named 'huggingface_hub' 这个报错如何修复呢？
+
+
+
+Q：老师，60步指的是让模型学习大概120条左右的数据是吗？也就是说你给他6万多条数据，但是它只学习其中120条数据？
+60*2*4=480
+
+
+Q：做freelancer项目的加fragilebc,要人在上海
+
+
+Q：多模态 文生视频，图生视频怎么微调
+
+
+Q：什么叫蒸馏
+知识的教学，老师模型讲知识整理出来 => 学生模型进行学习
+
+Q：可以把蒸馏模型出来写代码吗？
+
+
+Q：lora和qlora的区别
+LoRA QLora
+
+@六了 不会，不如你问ai
+哪里看不懂问哪里
+
+
+Q：unsloth 是 NVIDIA GPU + Linux 专属的训练加速库（底层依赖 Triton、CUDA 内核），Windows 环境不支持
+
+
+
+概念不同
+
+
+Q：怎么保护自己掌握的行业垂类数据不被别人随便蒸馏了去呢？
+
+
+Q：怎么让 老师模型，整理出几万数据集
+调用Gemini 调API
+调用K3的API
+
+
+Q：基于unsloth的微调都是采用LoRA吗？能解释下epoch等参数吗？
+
+
+Q：lora 使用时搭配的基座模型只能用训练时的那个基座模型吗？
+对的
+
+Q：老师，对于闭源商用模型，如果想要微调，可以通过API 去调用吗？还是完全没有途径来蒸馏它？（同问）
+蒸馏是套知识 （QA）
+
+
+Q：老师，汽车仪表盘这个例子麻烦再给讲一下流程：从识别不了P挡到模型蒸馏后能识别出P挡整个流程步骤是怎么实现的？
+
+
+Q：蒸馏得到数据，是对模型做全量微调，还是高效微调？
+蒸馏  = 训练数据获取方式
+训练的方法，可以选择 全量微调，也可以选择 高效微调
+
+Q：开源的小的基座模型是不是很少？都是用的QWEN
+
+
+Q：可以把开源模型蒸馏成专门写代码的模型么？参数量小了这样是不是就可以放在本地部署了？
+可以尝试，不过写代码能力强的，一般参量量都不小
+
+3b-coder
+
+
+Q：用一个开源小模型蒸馏大模型的金融领域Q&A是不是就可以降低金融机构本地部署的成本
+
+
+Q：有蒸馏的py文件吗？？
+
+
+Q：我试过这些小的，没法用，只能单文件用用，单文件复杂的也不行。
+
+
