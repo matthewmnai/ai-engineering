@@ -1,9 +1,12 @@
 # ===== AutoDL GPU 依赖（只 AutoDL 装）=====
 # 训练 / 微调 / 大模型推理必需，体积大、强依赖 CUDA
 
-# CUDA 版 PyTorch（cu124 / CUDA 12.4）
-# 如需强制 CUDA 版本，setup-autodl.sh 里会用:
-#   pip install torch --index-url https://download.pytorch.org/whl/cu124
+# PyTorch 2.5.1（如需 CUDA 版需从 PyTorch 官方 index 安装）
+# 默认 pip 源装的是 CPU-only 版；CUDA 版安装命令:
+#   pip install torch==2.5.1 torchvision==0.20.1 torchaudio==2.5.1 \
+#       --index-url https://download.pytorch.org/whl/cu124
+# setup-autodl.sh 直接 pip install -r 本文件，未指定 CUDA index，
+# 若需要 GPU 加速请手动加 --index-url 或修改 setup-autodl.sh
 torch==2.5.1
 torchvision==0.20.1
 torchaudio==2.5.1
@@ -11,9 +14,9 @@ torchaudio==2.5.1
 # HF 生态 + 微调核心
 transformers==4.51.3
 accelerate==1.7.0
-peft==0.15.0
-trl==0.15.2
-datasets==3.1.0
+peft==0.20.0
+trl==0.25.1
+datasets==2.19.1
 sentence-transformers==3.3.0
 
 # modelscope 备用国内模型源
@@ -23,12 +26,12 @@ modelscope>=1.18.0
 bitsandbytes==0.45.4
 
 # 微调加速（锁版本，两版本配套；只支持 Linux + CUDA，Mac 不可用）
-# unsloth_zoo 2025.3.17 不依赖 torchao，兼容 torch 2.5.1
-unsloth==2025.3.19
-unsloth_zoo==2025.3.17
+# unsloth_zoo 2025.10.7 不依赖 torchao，兼容 torch 2.5.1
+unsloth==2025.10.8
+unsloth_zoo==2025.10.7
 
 # 推理引擎
-vllm==0.7.3
+vllm==0.11.0
 
 # 实验追踪
 wandb==0.19.11
@@ -37,4 +40,6 @@ wandb==0.19.11
 numpy==1.26.4
 scipy==1.13.1            # 兼容 numpy 1.26.x；scipy>=1.14 需要 numpy>=2.0
 packaging==25.0
-pandas>=2.2.0
+pandas==2.3.3
+
+

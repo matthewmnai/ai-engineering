@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # ============================================================
 # AI Engineering —— AutoDL / Linux GPU 环境一键部署
-# 功能：base 环境直接安装 common + gpu 依赖 + HF 镜像 + 自检
+# 功能：base 环境直接用 uv 安装 common + gpu 依赖 + HF 镜像 + 自检
 # 运行：
 #   bash setup-autodl.sh                 # 标准路径
 #   bash setup.sh                        # 根目录软链接（自动路由到此）
@@ -28,40 +28,57 @@ echo " 项目根: ${PROJECT_ROOT}"
 echo " 环境: conda base"
 echo "============================================"
 
-# ---------- [0] conda 可用性（用于 pip）----------
-if ! command -v pip >/dev/null 2>&1; then
-  echo "[0/4] pip 不可用，尝试 source conda.sh ..."
-  for candidate in \
-    /root/miniconda3/etc/profile.d/conda.sh \
-    /opt/conda/etc/profile.d/conda.sh \
-    "$HOME/miniconda3/etc/profile.d/conda.sh" \
-    "$HOME/anaconda3/etc/profile.d/conda.sh"; do
-    if [ -f "$candidate" ]; then
-      source "$candidate"; break
-    fi
-  done
+# ---------- [0] conda + uv ----------
+# conda.sh source（确保 python/pip 在 PATH）
+for candidate in \
+  /root/miniconda3/etc/profile.d/conda.sh \
+  /opt/conda/etc/profile.d/conda.sh \
+  "$HOME/miniconda3/etc/profile.d/conda.sh" \
+  "$HOME/anaconda3/etc/profile.d/conda.sh"; do
+  if [ -f "$candidate" ]; then
+    source "$candidate"; break
+  fi
+done
+if ! command -v python >/dev/null 2>&1; then
+  echo "❌ 找不到 python，请先安装 Miniconda/Anaconda"; exit 1
 fi
-if ! command -v pip >/dev/null 2>&1; then
-  echo "❌ 找不到 pip，请先安装 Miniconda/Anaconda"; exit 1
+
+# uv 安装（优先官方脚本，pip fallback）
+if ! command -v uv >/dev/null 2>&1; then
+  echo "[0/4] uv 未安装，尝试自动安装..."
+  if command -v curl >/dev/null 2>&1; then
+    curl -LsSf https://astral.sh/uv/install.sh | sh
+    export PATH="$HOME/.local/bin:$PATH"
+  elif command -v pip >/dev/null 2>&1; then
+    pip install uv
+  else
+    echo "❌ 找不到 curl 和 pip，无法安装 uv"; exit 1
+  fi
 fi
+if ! command -v uv >/dev/null 2>&1; then
+  echo "❌ uv 安装失败，请手动安装: curl -LsSf https://astral.sh/uv/install.sh | sh"; exit 1
+fi
+
+# uv pip 在 conda base（非 venv）里必须加 --system 或 export UV_SYSTEM_PYTHON=1
+export UV_SYSTEM_PYTHON=1
 
 echo "  ✅ 当前 Python: $(python -V 2>&1)"
+echo "  ✅ uv 版本: $(uv --version 2>&1)"
 
-# ---------- [1] pip 国内源 ----------
+# ---------- [1] uv 国内源 ----------
 echo ""
-echo "[1/4] 配置 pip 清华源..."
-pip config set global.index-url https://pypi.tuna.tsinghua.edu.cn/simple
+echo "[1/4] 配置 uv 清华源..."
+export UV_INDEX_URL=https://pypi.tuna.tsinghua.edu.cn/simple
 
 # ---------- [2] 安装依赖（common → gpu）----------
 echo ""
 echo "[2/4] 安装依赖（common + gpu，首次较久）..."
-pip install --upgrade pip
 
 # common（两边通用轻量包）
-pip install -r "${PROJECT_ROOT}/environment/requirements-common.txt"
+uv pip install -r "${PROJECT_ROOT}/environment/requirements-common.txt"
 
 # gpu（torch + CUDA 生态 —— 如果已有 CUDA torch 会跳过）
-pip install -r "${PROJECT_ROOT}/environment/requirements-gpu.txt"
+uv pip install -r "${PROJECT_ROOT}/environment/requirements-gpu.txt"
 
 # CUDA 版本提示
 CUDA_VER=$(python -c "import torch; print(torch.version.cuda or 'CPU')" 2>/dev/null || echo "unknown")
