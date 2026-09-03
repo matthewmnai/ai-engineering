@@ -37,7 +37,7 @@ from unsloth import FastVisionModel
 import torch
 
 from pathlib import Path
-_PROJECT_ROOT = str(Path(__file__).resolve().parents[4])
+_PROJECT_ROOT = str(Path(__file__).resolve().parents[5])
 if _PROJECT_ROOT not in sys.path:
     sys.path.insert(0, _PROJECT_ROOT)
 os.chdir(os.path.dirname(__file__))
