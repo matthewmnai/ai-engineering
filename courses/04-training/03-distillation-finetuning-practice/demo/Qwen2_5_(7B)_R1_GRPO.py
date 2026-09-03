@@ -18,6 +18,12 @@ _c.DEFAULT_ENDPOINT = "https://hf-mirror.com"
 _c.HF_ENDPOINT = "https://hf-mirror.com"
 _c.ENDPOINT = "https://hf-mirror.com"
 
+# 定义输出目录（当前文件目录../outputs）
+_OUTPUT_DIR = os.path.join(os.path.dirname(__file__), "..", "outputs", "grpo_train")
+__CHECKPOINT_DIR = os.path.join(_OUTPUT_DIR, "checkpoint")
+__LORA_DIR = os.path.join(_OUTPUT_DIR, "lora_model")
+
+
 # 确保项目根在 sys.path，使 paths.py 能被导入
 import sys
 from pathlib import Path
@@ -184,7 +190,6 @@ def xmlcount_reward_func(completions, **kwargs) -> list[float]:
 max_prompt_length = 256
 
 from trl import GRPOConfig, GRPOTrainer
-
 training_args = GRPOConfig(
     learning_rate=5e-6,
     adam_beta1=0.9,
@@ -199,11 +204,13 @@ training_args = GRPOConfig(
     num_generations=6,  # 每个问题生成6个候选答案
     max_prompt_length=max_prompt_length,
     max_completion_length=max_seq_length - max_prompt_length,
-    max_steps=250,
-    save_steps=250,
+    # max_steps=250,
+    # save_steps=250,
+    max_steps=10,
+    save_steps=10,
     max_grad_norm=0.1,
     report_to="none",
-    output_dir="../outputs/checkpoints",
+    output_dir=__CHECKPOINT_DIR,
 )
 
 trainer = GRPOTrainer(
@@ -229,7 +236,9 @@ trainer.train()
 # ========================================
 
 # 保存LoRA参数
-model.save_lora("../outputs/grpo_saved_lora")
+os.makedirs(__LORA_DIR, exist_ok=True)
+model.save_lora(__LORA_DIR)
+
 
 # 测试模型推理
 text = tokenizer.apply_chat_template([
@@ -247,7 +256,7 @@ sampling_params = SamplingParams(
 output = model.fast_generate(
     text,
     sampling_params=sampling_params,
-    lora_request=model.load_lora("../outputs/grpo_saved_lora"),
+    lora_request=model.load_lora(__LORA_DIR),
 )[0].outputs[0].text
 
 print(output)

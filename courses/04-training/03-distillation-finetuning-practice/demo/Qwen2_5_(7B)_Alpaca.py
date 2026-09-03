@@ -25,6 +25,12 @@ if _PROJECT_ROOT not in sys.path:
     sys.path.insert(0, _PROJECT_ROOT)
 from environment.paths import get_model_dir, get_dataset_dir
 
+# 定义输出目录（当前文件目录../outputs）
+_OUTPUT_DIR = os.path.join(os.path.dirname(__file__), "..", "outputs", "sft_train")
+__CHECKPOINT_DIR = os.path.join(_OUTPUT_DIR, "checkpoint")
+__LORA_DIR = os.path.join(_OUTPUT_DIR, "lora_model")
+
+
 from unsloth import FastLanguageModel
 import torch
 
@@ -39,7 +45,6 @@ model, tokenizer = FastLanguageModel.from_pretrained(
     dtype=dtype,
     load_in_4bit=load_in_4bit,
 )
-
 
 # ========================================
 # Step 2: LoRA适配器配置
@@ -104,7 +109,7 @@ training_args = TrainingArguments(
     per_device_train_batch_size=2,
     gradient_accumulation_steps=4,
     warmup_steps=5,
-    max_steps=60,
+    max_steps=10,
     learning_rate=2e-4,
     fp16=not is_bfloat16_supported(),
     bf16=is_bfloat16_supported(),
@@ -113,7 +118,7 @@ training_args = TrainingArguments(
     weight_decay=0.01,
     lr_scheduler_type="linear",
     seed=3407,
-    output_dir="../outputs/checkpoints",
+    output_dir=__CHECKPOINT_DIR,
     report_to="none",
 )
 
@@ -186,16 +191,17 @@ _ = model.generate(**inputs, streamer=text_streamer, max_new_tokens=128)
 # ========================================
 # Step 6: 模型保存
 # ========================================
-
 # 保存LoRA参数
-model.save_pretrained("../outputs/lora_model")
-tokenizer.save_pretrained("../outputs/lora_model")
+os.makedirs(__LORA_DIR, exist_ok=True)
+model.save_pretrained(__LORA_DIR)
+tokenizer.save_pretrained(__LORA_DIR)
 
-# 加载并验证保存的模型
-if True:
+# 加载并验证保存的模型（路径必须和保存时一致，否则 unsloth 会当成 HF 仓库 ID 查找）
+
+if os.path.isdir(__LORA_DIR):
     from unsloth import FastLanguageModel
     model, tokenizer = FastLanguageModel.from_pretrained(
-        model_name="lora_model",
+        model_name=__LORA_DIR,
         max_seq_length=max_seq_length,
         dtype=dtype,
         load_in_4bit=load_in_4bit,
@@ -206,9 +212,11 @@ if True:
         [alpaca_prompt.format("What is a famous tall tower in Paris?", "", "")],
         return_tensors="pt"
     ).to("cuda")
-    
+
     text_streamer = TextStreamer(tokenizer)
     _ = model.generate(**inputs, streamer=text_streamer, max_new_tokens=128)
+else:
+    print(f"⚠️  LoRA 目录不存在，跳过加载验证: {_lora_dir}")
 
 
 # ========================================

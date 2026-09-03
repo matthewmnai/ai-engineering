@@ -76,29 +76,33 @@ if [ "${USE_UV}" = "1" ]; then
   echo "  ✅ uv 版本: $(uv --version 2>&1)"
 fi
 
-# ---------- [1] 双源配置 ----------
-# 主源：阿里云镜像（加速通用包下载）
+# ---------- [1] 镜像源配置 ----------
+# 主源：清华 TUNA（AutoDL 容器内阿里云出网受限，实测清华稳定）
 # 额外源：PyTorch 官方 CUDA wheel（torch+cu124 后缀包只有这里才有）
+# 兜底：PyPI 官方（extra-index-url 里加上，清华缺包时自动回退）
 echo ""
-echo "[1/4] 配置双源（阿里云 + PyTorch CUDA）..."
-export PIP_INDEX_URL=https://mirrors.aliyun.com/pypi/simple
-export PIP_EXTRA_INDEX_URL=https://download.pytorch.org/whl/cu124
-export UV_INDEX_URL=https://mirrors.aliyun.com/pypi/simple
-export UV_EXTRA_INDEX_URL=https://download.pytorch.org/whl/cu124
+echo "[1/4] 配置镜像源（清华 TUNA + PyTorch CUDA + PyPI 兜底）..."
+
+PRIMARY_MIRROR="https://pypi.tuna.tsinghua.edu.cn/simple"
+EXTRA_MIRRORS="https://download.pytorch.org/whl/cu124 https://pypi.org/simple"
+
+export PIP_INDEX_URL="${PRIMARY_MIRROR}"
+export PIP_EXTRA_INDEX_URL="${EXTRA_MIRRORS}"
+export UV_INDEX_URL="${PRIMARY_MIRROR}"
+export UV_EXTRA_INDEX_URL="${EXTRA_MIRRORS}"
+
 # 持久化 pip 配置（uv 也会读这个）
 mkdir -p ~/.pip
-if ! grep -qxF 'index-url = https://mirrors.aliyun.com/pypi/simple' ~/.pip/pip.conf 2>/dev/null; then
-  cat >> ~/.pip/pip.conf <<EOF
-
+cat > ~/.pip/pip.conf <<EOF
 [global]
-index-url = https://mirrors.aliyun.com/pypi/simple
-extra-index-url = https://download.pytorch.org/whl/cu124
-trusted-host = mirrors.aliyun.com
+index-url = ${PRIMARY_MIRROR}
+extra-index-url = ${EXTRA_MIRRORS}
+trusted-host = pypi.tuna.tsinghua.edu.cn download.pytorch.org pypi.org
 EOF
-  echo "  → pip 双源配置已持久化到 ~/.pip/pip.conf"
-fi
-echo "  ✅ 主源: https://mirrors.aliyun.com/pypi/simple"
-echo "  ✅ CUDA: https://download.pytorch.org/whl/cu124"
+echo "  → pip 配置已持久化到 ~/.pip/pip.conf"
+echo "  ✅ 主源: ${PRIMARY_MIRROR}"
+echo "  ✅ 额外: https://download.pytorch.org/whl/cu124（CUDA wheel）"
+echo "  ✅ 兜底: https://pypi.org/simple"
 
 # ---------- [2] 安装依赖（common → gpu）----------
 echo ""
@@ -121,23 +125,19 @@ ${INSTALL} -r "${PROJECT_ROOT}/environment/requirements-common.txt"
 # gpu（torch + CUDA 生态 —— 如果已有 CUDA torch 会跳过）
 ${INSTALL} -r "${PROJECT_ROOT}/environment/requirements-gpu.txt"
 
-# ---------- [2.5] torchao 卸载（和 torch 2.5.1 不兼容）----------
-# unsloth_zoo 2025.10.x 硬依赖 torchao，但 torchao 0.9~0.16 全部用了 torch.int1
-# （这是 torch 2.11 才引入的 dtype），一 import 就 AttributeError。
-# 解法：卸载 torchao + 用 --no-deps 重装 unsloth_zoo 绕过依赖声明。
-# unsloth 实际用 bitsandbytes 做量化，torchao 可安全移除。
+# ---------- [2.5] 版本锁定校验 ----------
+# requirements-gpu.txt 已锁 unsloth_zoo==2025.3.17（无 torchao 依赖），
+# 避免 pip/uv 解析到 2025.10.x+（硬绑 torchao>=0.13.0 且与 torch 2.5.1 不兼容）
 echo ""
-echo "[2.5/4] 卸 torchao（和 torch 2.5.1 不兼容）..."
-${UNINSTALL} torchao -y 2>/dev/null || true
-# 清理残留文件（pip/uv 卸载可能漏掉 dist-info）
-rm -rf "$(python -c 'import site; print(site.getsitepackages()[0])')/torchao"* 2>/dev/null || true
-# 绕过 unsloth_zoo 对 torchao 的硬依赖，强制重装
-if [ "${USE_UV}" = "1" ]; then
-  uv pip install --no-deps "unsloth_zoo>=2025.10.9" 2>/dev/null || true
-else
-  pip install --no-deps "unsloth_zoo>=2025.10.9" 2>/dev/null || true
+echo "[2.5/4] 版本锁校验..."
+INSTALLED_ZOO=$(python -c "import unsloth_zoo; print(unsloth_zoo.__version__)" 2>/dev/null || echo "未安装")
+INSTALLED_TORCHAO=$(python -c "import torchao; print(torchao.__version__)" 2>/dev/null || echo "未安装")
+echo "  unsloth_zoo : ${INSTALLED_ZOO}（期望 2025.3.17）"
+echo "  torchao     : ${INSTALLED_TORCHAO}（期望 未安装）"
+if [ "${INSTALLED_TORCHAO}" != "未安装" ]; then
+  echo "  ⚠️  torchao 意外存在，卸载中..."
+  ${UNINSTALL} torchao -y 2>/dev/null || true
 fi
-echo "  ✅ torchao 已移除，unsloth_zoo 以 --no-deps 模式重装"
 
 # CUDA 版本提示
 CUDA_VER=$(python -c "import torch; print(torch.version.cuda or 'CPU')" 2>/dev/null || echo "unknown")
